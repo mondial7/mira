@@ -75,7 +75,7 @@ func (m Model) renderSummary() string {
 }
 
 func (m Model) renderFooter() string {
-	help := "↑↓←→ / hjkl move · ⏎ open · ⌫ up · click to enter · q quit"
+	help := "↑↓←→/wasd move · ⏎ open · ⌫ up · h hidden · Q cd here · q quit"
 	if m.err != nil {
 		return errorStyle.Render("error: "+m.err.Error()) + "\n" + helpStyle.Render(help)
 	}
@@ -133,8 +133,9 @@ func (m Model) renderRow(start, end int) string {
 func renderCard(m Model, i int) []string {
 	selected := i == m.cursor
 	sym, name, stats, kind := cardContent(m, i)
+	hidden := !m.isParent(i) && strings.HasPrefix(name, ".")
 
-	tl, tr, bl, br, h, v, bs, ns, ss := cardChrome(selected, kind)
+	tl, tr, bl, br, h, v, bs, ns, ss := cardChrome(selected, kind, hidden)
 	cellW := m.cellWidth()
 	innerWidth := cellW - 2
 	if innerWidth < 1 {
@@ -232,8 +233,10 @@ const (
 )
 
 // cardChrome returns the border glyphs + lipgloss styles for a card based
-// on whether it's selected and what kind of entry it represents.
-func cardChrome(selected bool, kind cardKind) (
+// on whether it's selected, what kind of entry it represents, and whether
+// it's a hidden (dotfile) entry. Hidden entries inherit the kind's border
+// style but get dimmed-italic text so they're visually secondary.
+func cardChrome(selected bool, kind cardKind, hidden bool) (
 	tl, tr, bl, br, h, v string,
 	border, name, stats lipgloss.Style,
 ) {
@@ -244,6 +247,7 @@ func cardChrome(selected bool, kind cardKind) (
 		border = selectedStyle
 		name = nameSelectedStyle
 		stats = statsSelectedStyle
+		return
 	case kind == kindFile:
 		tl, tr, bl, br = doubleTL, doubleTR, doubleBL, doubleBR
 		h, v = doubleH, doubleV
@@ -256,6 +260,10 @@ func cardChrome(selected bool, kind cardKind) (
 		border = borderStyle
 		name = nameStyle
 		stats = statsStyle
+	}
+	if hidden {
+		name = nameHiddenStyle
+		stats = statsHiddenStyle
 	}
 	return
 }

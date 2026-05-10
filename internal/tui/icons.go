@@ -84,7 +84,11 @@ var (
 	nameSelectedStyle  = lipgloss.NewStyle().Foreground(colNameSel).Bold(true)
 	statsStyle         = lipgloss.NewStyle().Foreground(colMid)
 	statsSelectedStyle = lipgloss.NewStyle().Foreground(colMid).Bold(true)
-	critterStyle       = lipgloss.NewStyle().Foreground(colCritters)
-	helpStyle          = lipgloss.NewStyle().Foreground(colHelp)
-	errorStyle         = lipgloss.NewStyle().Bold(true).Foreground(colErr)
+	// Hidden entries (dotfiles) get a dimmer, italicised treatment so the
+	// user can tell them apart from regular entries even at a glance.
+	nameHiddenStyle  = lipgloss.NewStyle().Foreground(colDim).Italic(true)
+	statsHiddenStyle = lipgloss.NewStyle().Foreground(colDim).Italic(true)
+	critterStyle     = lipgloss.NewStyle().Foreground(colCritters)
+	helpStyle        = lipgloss.NewStyle().Foreground(colHelp)
+	errorStyle       = lipgloss.NewStyle().Bold(true).Foreground(colErr)
 )

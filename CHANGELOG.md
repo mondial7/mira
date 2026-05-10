@@ -7,7 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Letter-based navigation moved from `hjkl` (vim-style) to `adws`
+  (gaming-style). `h` is now reserved for the hidden-toggle.
+
 ### Added
+
+- `h` toggles dotfile visibility at runtime; hidden entries render in a
+  dimmed-italic style so they're visible but obviously secondary.
+- `Q` (capital Q) quits the TUI and prints the current directory to
+  stdout; combined with the shell wrapper documented in the README, the
+  parent shell follows you into whatever folder you ended up exploring.
+- `--cd` flag forces TUI mode even when stdout is captured, so the
+  shell-wrapper integration works through `$(...)`.
+
+### Earlier in unreleased
 
 - Interactive TUI file browser built on
   [`bubbletea`](https://github.com/charmbracelet/bubbletea) with mouse +

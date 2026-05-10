@@ -55,6 +55,11 @@ type Model struct {
 	totalDirs  int
 	totalSize  int64
 	sizeExact  bool
+
+	// QuitWithCD is set when the user pressed the "quit and cd here" key
+	// (capital Q). The runner inspects this after tea.Quit so a wrapper
+	// shell function can capture the path off stdout.
+	QuitWithCD bool
 }
 
 // New constructs a Model rooted at start. It returns an error only when
@@ -107,6 +112,11 @@ func (m *Model) recomputeAggregates() {
 		}
 	}
 }
+
+// CWD returns the directory the user was looking at when the program
+// exited. Exposed so the binary's --cd mode can print it to stdout for
+// shell-wrapper consumption.
+func (m Model) CWD() string { return m.cwd }
 
 // totalItems counts entries plus the synthetic ".." at index 0.
 func (m Model) totalItems() int { return len(m.entries) + 1 }
@@ -252,19 +262,23 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
-	case "left", "h":
+	case "Q":
+		// Quit and ask the wrapper shell function to cd into the current dir.
+		m.QuitWithCD = true
+		return m, tea.Quit
+	case "left", "a":
 		if m.cursor > 0 {
 			m.cursor--
 		}
-	case "right", "l":
+	case "right", "d":
 		if m.cursor < m.totalItems()-1 {
 			m.cursor++
 		}
-	case "up", "k":
+	case "up", "w":
 		if m.cursor-m.cols() >= 0 {
 			m.cursor -= m.cols()
 		}
-	case "down", "j":
+	case "down", "s":
 		if m.cursor+m.cols() < m.totalItems() {
 			m.cursor += m.cols()
 		}
@@ -276,8 +290,20 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.activate(m.cursor)
 	case "backspace", "esc":
 		m.goUp()
+	case "h":
+		m.toggleHidden()
 	}
 	return m, nil
+}
+
+// toggleHidden flips the ShowHidden option and re-lists the directory.
+// Errors during refresh are surfaced through the model's status line so
+// the user sees them without losing the current navigation context.
+func (m *Model) toggleHidden() {
+	m.opts.ShowHidden = !m.opts.ShowHidden
+	if err := m.refresh(); err != nil {
+		m.err = err
+	}
 }
 
 func (m Model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {

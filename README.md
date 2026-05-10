@@ -18,7 +18,7 @@ file browser with ASCII-art icons, mouse clicks, keyboard navigation, and
                                                 ( o.o )   ( o.o )
                                                  > ^ <     v=-=v
 
-5 items · ↑↓←→ / hjkl move · ⏎ open · ⌫ up · click to enter · q quit
+5 items · ↑↓←→/wasd move · ⏎ open · ⌫ up · h hidden · Q cd here · q quit
 ```
 
 ## Features
@@ -87,17 +87,51 @@ banana-four --list | grep .go
 
 ### Keybindings
 
-| Key                       | Action                          |
-| ------------------------- | ------------------------------- |
-| `←` / `→` / `h` / `l`     | Move cursor left/right          |
-| `↑` / `↓` / `k` / `j`     | Move cursor up/down              |
-| `Enter` / `Space`         | Open selected folder            |
-| `Backspace` / `Esc`       | Go up one directory             |
-| `Home` / `g`              | Jump to first item              |
-| `End` / `G`               | Jump to last item               |
-| `q` / `Ctrl-C`            | Quit                            |
-| Mouse click on a folder   | Enter that folder               |
-| Mouse click on `..`       | Go up                           |
+| Key                       | Action                                        |
+| ------------------------- | --------------------------------------------- |
+| `←` / `→` / `a` / `d`     | Move cursor left/right                        |
+| `↑` / `↓` / `w` / `s`     | Move cursor up/down                           |
+| `Enter` / `Space`         | Open selected folder                          |
+| `Backspace` / `Esc`       | Go up one directory                           |
+| `Home` / `g`              | Jump to first item                            |
+| `End` / `G`               | Jump to last item                             |
+| `h`                       | Toggle hidden (dotfile) entries               |
+| `q` / `Ctrl-C`            | Quit                                          |
+| `Q`                       | Quit and `cd` into the explored directory †   |
+| Mouse click on a folder   | Enter that folder                             |
+| Mouse click on `..`       | Go up                                         |
+
+† Requires the shell wrapper from the next section.
+
+### Quit & cd: shell wrapper
+
+`Q` only changes the parent shell's directory if you wrap the binary in
+a shell function. Drop one of these in your shell rc file:
+
+```sh
+# ~/.bashrc / ~/.zshrc
+bf() {
+  local target
+  target=$(command banana-four --cd "$@") || return
+  if [ -n "$target" ] && [ -d "$target" ]; then
+    cd "$target"
+  fi
+}
+```
+
+```fish
+# ~/.config/fish/functions/bf.fish
+function bf
+  set target (command banana-four --cd $argv)
+  if test -n "$target" -a -d "$target"
+    cd "$target"
+  end
+end
+```
+
+Now `bf` opens the TUI; press `Q` to leave and have your shell follow you
+into whatever directory you ended up exploring. Plain `q` exits without
+changing the directory.
 
 ## Security
 

@@ -3,6 +3,10 @@
 // keyboard navigation. When stdout is not a TTY (e.g. piping into another
 // command) it prints a plain, gitignore-aware listing of the current
 // directory instead, so it composes well in scripts.
+//
+// Pass --cd when invoking from a wrapper shell function: that forces the
+// TUI on /dev/tty even when stdout is captured, and on a "Q" quit the
+// chosen directory is printed to stdout so the wrapper can `cd` to it.
 package main
 
 import (
@@ -32,6 +36,7 @@ func run(args []string, stdout, stderr *os.File) int {
 	dirs := fs.Bool("d", false, "list directories only")
 	noIgnore := fs.Bool("no-ignore", false, "disable .gitignore filtering")
 	listMode := fs.Bool("list", false, "force flat-list output instead of the TUI")
+	cdMode := fs.Bool("cd", false, "force TUI mode; on Q-quit print the final directory to stdout (for shell-wrapper integration)")
 	showVersion := fs.Bool("version", false, "print version and exit")
 
 	fs.Usage = func() {
@@ -40,7 +45,8 @@ func run(args []string, stdout, stderr *os.File) int {
 A pretty, interactive folder visualizer.
 
 By default banana-four opens a TUI. Pipe the output or pass --list to get
-a plain listing instead.
+a plain listing instead. Pass --cd from a shell wrapper to capture the
+final directory on a "Q" quit.
 
 Options:
 `, filepath.Base(os.Args[0]))
@@ -67,10 +73,18 @@ Options:
 		UseGitignore: !*noIgnore,
 	}
 
-	if *listMode || !isTTY(stdout) {
+	switch {
+	case *listMode:
 		return runFlat(stdout, stderr, root, opts)
+	case *cdMode:
+		// Wrapper-driven invocation: stdout is captured by `$(...)`, the
+		// TUI still runs on /dev/tty, and the chosen path goes to stdout.
+		return runTUI(stdout, stderr, root, opts, true)
+	case !isTTY(stdout):
+		return runFlat(stdout, stderr, root, opts)
+	default:
+		return runTUI(stdout, stderr, root, opts, false)
 	}
-	return runTUI(stderr, root, opts)
 }
 
 func runFlat(stdout, stderr *os.File, root string, opts listing.Options) int {
@@ -83,16 +97,22 @@ func runFlat(stdout, stderr *os.File, root string, opts listing.Options) int {
 	return 0
 }
 
-func runTUI(stderr *os.File, root string, opts listing.Options) int {
+func runTUI(stdout, stderr *os.File, root string, opts listing.Options, emitCWD bool) int {
 	model, err := tui.New(root, opts)
 	if err != nil {
 		fmt.Fprintf(stderr, "error: %v\n", err)
 		return 1
 	}
 	prog := tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion())
-	if _, err := prog.Run(); err != nil {
+	final, err := prog.Run()
+	if err != nil {
 		fmt.Fprintf(stderr, "error: %v\n", err)
 		return 1
+	}
+	if emitCWD {
+		if mf, ok := final.(tui.Model); ok && mf.QuitWithCD {
+			fmt.Fprintln(stdout, mf.CWD())
+		}
 	}
 	return 0
 }

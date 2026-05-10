@@ -21,7 +21,10 @@ func TestPreview(t *testing.T) {
 	if dir == "" {
 		dir = "."
 	}
-	m, err := New(dir, listing.Options{UseGitignore: true})
+	m, err := New(dir, listing.Options{
+		UseGitignore: true,
+		ShowHidden:   os.Getenv("BF_PREVIEW_HIDDEN") != "",
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

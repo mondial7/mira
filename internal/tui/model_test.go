@@ -207,8 +207,92 @@ func TestModel_QuitKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	next, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
 	if cmd == nil {
 		t.Fatal("expected tea.Quit cmd from 'q' key")
+	}
+	if next.(Model).QuitWithCD {
+		t.Error("plain 'q' must not set QuitWithCD")
+	}
+}
+
+func TestModel_QuitWithCDKey(t *testing.T) {
+	root := scaffoldDir(t)
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	next, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'Q'}})
+	if cmd == nil {
+		t.Fatal("expected tea.Quit cmd from 'Q' key")
+	}
+	if !next.(Model).QuitWithCD {
+		t.Error("'Q' must set QuitWithCD")
+	}
+	if next.(Model).CWD() == "" {
+		t.Error("CWD() should be populated after navigation")
+	}
+}
+
+func TestModel_HToggleHiddenFlipsOption(t *testing.T) {
+	root := scaffoldDir(t)
+	// Add a dotfile so the toggle has something to flip in/out.
+	if err := os.WriteFile(filepath.Join(root, ".secret"), nil, 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if m.opts.ShowHidden {
+		t.Fatal("ShowHidden should default to false")
+	}
+
+	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
+	m = next.(Model)
+	if !m.opts.ShowHidden {
+		t.Fatal("'h' should flip ShowHidden true")
+	}
+
+	// Hidden file should now appear in entries.
+	found := false
+	for _, e := range m.entries {
+		if e.Name == ".secret" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf(".secret not in entries after toggle: %+v", m.entries)
+	}
+
+	// Toggle back off; .secret should disappear.
+	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
+	m = next.(Model)
+	for _, e := range m.entries {
+		if e.Name == ".secret" {
+			t.Errorf(".secret still showing after second toggle")
+		}
+	}
+}
+
+func TestModel_WASDNavigation(t *testing.T) {
+	root := scaffoldDir(t)
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	m.width = MinCellWidth * 5
+
+	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	m = next.(Model)
+	if m.cursor != 1 {
+		t.Errorf("'d' should move right; cursor = %d, want 1", m.cursor)
+	}
+
+	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	m = next.(Model)
+	if m.cursor != 0 {
+		t.Errorf("'a' should move left; cursor = %d, want 0", m.cursor)
 	}
 }
