@@ -46,15 +46,55 @@ func (m Model) viewWidth() int {
 
 func (m Model) renderHeader() string {
 	path := m.cwd
-	maxPath := m.viewWidth() - 4
+	indicator := m.scrollIndicator()
+	indW := lipgloss.Width(indicator)
+
+	// Reserve room for the scroll indicator at the right edge so the path
+	// isn't pushed under it. The +2 is a one-space margin between the
+	// path bar's right edge and the indicator.
+	reserve := 0
+	if indW > 0 {
+		reserve = indW + 2
+	}
+	maxPath := m.viewWidth() - 4 - reserve
 	if maxPath > 0 && lipgloss.Width(path) > maxPath {
-		// Truncate from the left so the leaf directory stays visible.
 		runes := []rune(path)
 		if len(runes) > maxPath-1 {
 			path = "…" + string(runes[len(runes)-(maxPath-1):])
 		}
 	}
-	return pathStyle.Render("▸ " + path)
+	pathBar := pathStyle.Render("▸ " + path)
+
+	if indW == 0 {
+		return pathBar
+	}
+
+	pathBarW := lipgloss.Width(pathBar)
+	spaces := m.viewWidth() - pathBarW - indW
+	if spaces < 1 {
+		spaces = 1
+	}
+	return pathBar + strings.Repeat(" ", spaces) + scrollIndicatorStyle.Render(indicator)
+}
+
+// scrollIndicator returns a 2-character glyph string showing whether the
+// grid extends above or below the current viewport. Empty when the
+// listing fits entirely.
+func (m Model) scrollIndicator() string {
+	canUp := m.scrollOffset > 0
+	canDown := m.scrollOffset+m.visibleGridRows() < m.totalGridRows()
+	if !canUp && !canDown {
+		return ""
+	}
+	up := " "
+	down := " "
+	if canUp {
+		up = "▲"
+	}
+	if canDown {
+		down = "▼"
+	}
+	return up + down
 }
 
 // renderSummary draws the second header line with a quick recap of the
@@ -83,8 +123,9 @@ func (m Model) renderFooter() string {
 	return helpStyle.Render(count + " · " + help)
 }
 
-// renderGrid lays out cards row by row, separating rows with a blank line
-// for breathing room.
+// renderGrid lays out the rows currently inside the scroll viewport,
+// separating them with a blank line for breathing room. Off-screen rows
+// are signalled by the ▲/▼ indicators in the header.
 func (m Model) renderGrid() string {
 	cols := m.cols()
 	n := m.totalItems()
@@ -92,15 +133,24 @@ func (m Model) renderGrid() string {
 		return helpStyle.Render("  (empty)")
 	}
 
+	visible := m.visibleGridRows()
+	startRow := m.scrollOffset
+	totalRows := m.totalGridRows()
+	endRow := startRow + visible
+	if endRow > totalRows {
+		endRow = totalRows
+	}
+
 	var rows []string
-	for start := 0; start < n; start += cols {
+	for r := startRow; r < endRow; r++ {
+		start := r * cols
 		end := start + cols
 		if end > n {
 			end = n
 		}
 		rows = append(rows, m.renderRow(start, end))
 	}
-	gap := "\n" + strings.Repeat("\n", rowGap) // newline ending each row + rowGap blanks
+	gap := "\n" + strings.Repeat("\n", rowGap)
 	return strings.Join(rows, gap)
 }
 

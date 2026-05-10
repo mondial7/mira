@@ -1,8 +1,10 @@
 package tui
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -198,6 +200,118 @@ func TestModel_AnimFrameAdvancesOnTick(t *testing.T) {
 	next, _ := m.Update(tickMsg{})
 	if next.(Model).animFrame != startFrame+1 {
 		t.Errorf("animFrame = %d, want %d", next.(Model).animFrame, startFrame+1)
+	}
+}
+
+// scaffoldManyDirs creates a tmp directory containing 30 numbered
+// subdirectories so we can exercise the scrolling code paths.
+func scaffoldManyDirs(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	for i := 0; i < 30; i++ {
+		name := filepath.Join(root, fmt.Sprintf("dir%02d", i))
+		if err := os.MkdirAll(name, 0o755); err != nil {
+			t.Fatalf("mkdir %s: %v", name, err)
+		}
+	}
+	return root
+}
+
+func TestModel_VisibleGridRowsScalesWithHeight(t *testing.T) {
+	root := scaffoldDir(t)
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	// Big terminal: at least 3 rows fit.
+	m.height = 60
+	if got := m.visibleGridRows(); got < 3 {
+		t.Errorf("visibleGridRows(60) = %d, want >= 3", got)
+	}
+	// Tiny terminal: never returns 0.
+	m.height = 5
+	if got := m.visibleGridRows(); got < 1 {
+		t.Errorf("visibleGridRows(5) = %d, want >= 1", got)
+	}
+}
+
+func TestModel_ScrollFollowsCursorDown(t *testing.T) {
+	root := scaffoldManyDirs(t)
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	// Force a tight viewport: 3 columns × 2 visible rows = 6 visible items.
+	m.width = m.columnStride()*3 - colGap
+	m.height = chromeLines + 2*(CellHeight+rowGap) - rowGap // exactly 2 rows
+	m.ensureCursorVisible()
+
+	if m.scrollOffset != 0 {
+		t.Fatalf("initial scrollOffset = %d, want 0", m.scrollOffset)
+	}
+
+	// Move cursor down past the visible window.
+	for i := 0; i < 10; i++ {
+		next, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
+		m = next.(Model)
+	}
+	if m.scrollOffset == 0 {
+		t.Errorf("scrollOffset still 0 after moving down 10 rows; cursor=%d", m.cursor)
+	}
+}
+
+func TestModel_ScrollFollowsCursorUp(t *testing.T) {
+	root := scaffoldManyDirs(t)
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	m.width = m.columnStride()*3 - colGap
+	m.height = chromeLines + 2*(CellHeight+rowGap) - rowGap
+
+	// Start near the bottom.
+	m.cursor = m.totalItems() - 1
+	m.ensureCursorVisible()
+	bottomScroll := m.scrollOffset
+	if bottomScroll == 0 {
+		t.Fatal("expected non-zero scrollOffset when cursor is at bottom")
+	}
+
+	// Now jump back to the top with 'g'.
+	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'g'}})
+	m = next.(Model)
+	if m.scrollOffset != 0 {
+		t.Errorf("scrollOffset after 'g' = %d, want 0", m.scrollOffset)
+	}
+}
+
+func TestModel_ScrollIndicatorReflectsState(t *testing.T) {
+	root := scaffoldManyDirs(t)
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	m.width = m.columnStride()*3 - colGap
+	m.height = chromeLines + 2*(CellHeight+rowGap) - rowGap
+
+	// At the top: only ▼ (or empty if everything fits — large enough listing
+	// here that scrollable is true).
+	if got := m.scrollIndicator(); got == "" || !strings.Contains(got, "▼") {
+		t.Errorf("indicator at top = %q, want ▼", got)
+	}
+	if strings.Contains(m.scrollIndicator(), "▲") {
+		t.Errorf("indicator at top should not show ▲, got %q", m.scrollIndicator())
+	}
+
+	// Jump to the end.
+	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'G'}})
+	m = next.(Model)
+	if got := m.scrollIndicator(); !strings.Contains(got, "▲") {
+		t.Errorf("indicator at end = %q, want ▲", got)
+	}
+	if strings.Contains(m.scrollIndicator(), "▼") {
+		t.Errorf("indicator at end should not show ▼, got %q", m.scrollIndicator())
 	}
 }
 

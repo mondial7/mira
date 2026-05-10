@@ -10,13 +10,16 @@ import (
 )
 
 // headerLines and footerLines define how many lines the top header block
-// and the bottom critter+help block consume. They're used for click →
-// cell mapping (header = number of lines BEFORE the grid starts).
+// and the bottom critter+help block consume. chromeLines is their sum
+// (plus blank separators) — the lines NOT available for the grid.
 const (
 	// Header = 1 path bar + 1 stats summary + 1 blank.
 	headerLines = 3
 	// Footer = 1 blank gap + CritterHeight + 1 blank + 1 help line.
 	footerLines = 1 + CritterHeight + 1 + 1
+	// chromeLines = header + footer (their constants already include the
+	// blanks that border them). Used to compute how many grid rows fit.
+	chromeLines = headerLines + footerLines
 )
 
 // tickInterval drives the ambient blink/wag loop. Critters always face
@@ -60,6 +63,11 @@ type Model struct {
 	// (capital Q). The runner inspects this after tea.Quit so a wrapper
 	// shell function can capture the path off stdout.
 	QuitWithCD bool
+
+	// scrollOffset is the index of the first grid row currently visible
+	// in the viewport. It's adjusted automatically as the cursor moves
+	// (see ensureCursorVisible) and on window resizes.
+	scrollOffset int
 }
 
 // New constructs a Model rooted at start. It returns an error only when
@@ -89,6 +97,9 @@ func (m *Model) refresh() error {
 	m.err = nil
 	m.recomputeAggregates()
 	m.cellW = m.computeCellWidth()
+	// New listing → start at the top of the grid.
+	m.scrollOffset = 0
+	m.ensureCursorVisible()
 	return nil
 }
 
@@ -152,8 +163,8 @@ func (m Model) cols() int {
 }
 
 // cellAt maps a terminal click to a cell index. y is in absolute terminal
-// coordinates; this function applies the header offset and accounts for
-// blank gaps between rows and columns.
+// coordinates; this function applies the header offset, the active
+// scrollOffset, and the inter-card / inter-row gaps.
 func (m Model) cellAt(x, y int) int {
 	gridY := y - headerLines
 	if gridY < 0 {
@@ -162,23 +173,83 @@ func (m Model) cellAt(x, y int) int {
 	cols := m.cols()
 	stride := m.columnStride()
 	col := x / stride
-	// Reject clicks landing in the inter-card horizontal gap.
 	if x%stride >= m.cellWidth() {
 		return -1
 	}
 	rowStride := CellHeight + rowGap
-	row := gridY / rowStride
+	visualRow := gridY / rowStride
 	if gridY%rowStride >= CellHeight {
+		return -1
+	}
+	if visualRow < 0 || visualRow >= m.visibleGridRows() {
 		return -1
 	}
 	if col < 0 || col >= cols {
 		return -1
 	}
+	row := visualRow + m.scrollOffset
 	i := row*cols + col
 	if i < 0 || i >= m.totalItems() {
 		return -1
 	}
 	return i
+}
+
+// visibleGridRows returns how many full rows of cards fit in the
+// terminal beneath the header and above the footer/critters. It clamps
+// to at least 1 so we always render something even on absurdly small
+// terminals; before the first WindowSizeMsg arrives it returns a large
+// number so the snapshot tests (which set width but not height) still
+// see all rows.
+func (m Model) visibleGridRows() int {
+	if m.height <= 0 {
+		return 1 << 16
+	}
+	available := m.height - chromeLines
+	if available < CellHeight {
+		return 1
+	}
+	return (available + rowGap) / (CellHeight + rowGap)
+}
+
+// totalGridRows is how many rows the listing would occupy if every row
+// were rendered.
+func (m Model) totalGridRows() int {
+	cols := m.cols()
+	if cols < 1 {
+		return 0
+	}
+	n := m.totalItems()
+	return (n + cols - 1) / cols
+}
+
+// cursorRow is the grid row that currently holds the cursor.
+func (m Model) cursorRow() int {
+	cols := m.cols()
+	if cols < 1 {
+		return 0
+	}
+	return m.cursor / cols
+}
+
+// ensureCursorVisible nudges scrollOffset so cursorRow sits inside the
+// current viewport. Called after every cursor change, refresh, and
+// resize.
+func (m *Model) ensureCursorVisible() {
+	visible := m.visibleGridRows()
+	cur := m.cursorRow()
+	if cur < m.scrollOffset {
+		m.scrollOffset = cur
+	} else if cur >= m.scrollOffset+visible {
+		m.scrollOffset = cur - visible + 1
+	}
+	total := m.totalGridRows()
+	if m.scrollOffset+visible > total {
+		m.scrollOffset = total - visible
+	}
+	if m.scrollOffset < 0 {
+		m.scrollOffset = 0
+	}
 }
 
 // computeCellWidth measures the longest name + stats string across the
@@ -243,6 +314,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		m.ensureCursorVisible()
 		return m, nil
 
 	case tickMsg:
@@ -293,6 +365,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "h":
 		m.toggleHidden()
 	}
+	m.ensureCursorVisible()
 	return m, nil
 }
 
@@ -316,6 +389,7 @@ func (m Model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	}
 	m.cursor = i
 	m.activate(i)
+	m.ensureCursorVisible()
 	return m, nil
 }
 

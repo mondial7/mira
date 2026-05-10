@@ -28,10 +28,18 @@ func TestPreview(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	next, _ := m.Update(tea.WindowSizeMsg{Width: 90, Height: 40})
+	w, h := 90, 40
+	if v := os.Getenv("BF_PREVIEW_W"); v != "" {
+		fmt.Sscanf(v, "%d", &w)
+	}
+	if v := os.Getenv("BF_PREVIEW_H"); v != "" {
+		fmt.Sscanf(v, "%d", &h)
+	}
+	next, _ := m.Update(tea.WindowSizeMsg{Width: w, Height: h})
 	model := next.(Model)
 	if envCursor := os.Getenv("BF_PREVIEW_CURSOR"); envCursor != "" {
 		fmt.Sscanf(envCursor, "%d", &model.cursor)
+		model.ensureCursorVisible()
 	}
 	fmt.Println("\n" + model.View())
 }
