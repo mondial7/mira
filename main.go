@@ -103,7 +103,23 @@ func runTUI(stdout, stderr *os.File, root string, opts listing.Options, emitCWD 
 		fmt.Fprintf(stderr, "error: %v\n", err)
 		return 1
 	}
-	prog := tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion())
+
+	progOpts := []tea.ProgramOption{tea.WithAltScreen(), tea.WithMouseCellMotion()}
+	// In --cd mode our stdout is captured by `$(banana-four --cd)`, so we
+	// can't let bubbletea render into it (the wrapper would otherwise
+	// `cd` into a string of escape codes). Route the TUI through
+	// /dev/tty and keep stdout free for the chosen-directory print.
+	if emitCWD {
+		tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+		if err != nil {
+			fmt.Fprintf(stderr, "error: --cd needs a controlling terminal: %v\n", err)
+			return 1
+		}
+		defer tty.Close()
+		progOpts = append(progOpts, tea.WithInput(tty), tea.WithOutput(tty))
+	}
+
+	prog := tea.NewProgram(model, progOpts...)
 	final, err := prog.Run()
 	if err != nil {
 		fmt.Fprintf(stderr, "error: %v\n", err)
