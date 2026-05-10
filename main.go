@@ -40,7 +40,7 @@ func run(args []string, stdout, stderr *os.File) int {
 	showVersion := fs.Bool("version", false, "print version and exit")
 
 	fs.Usage = func() {
-		fmt.Fprintf(stderr, `Usage: %s [options] [path]
+		_, _ = fmt.Fprintf(stderr, `Usage: %s [options] [path]
 
 A pretty, interactive folder visualizer.
 
@@ -58,7 +58,7 @@ Options:
 	}
 
 	if *showVersion {
-		fmt.Fprintln(stdout, version)
+		_, _ = fmt.Fprintln(stdout, version)
 		return 0
 	}
 
@@ -90,23 +90,23 @@ Options:
 func runFlat(stdout, stderr *os.File, root string, opts listing.Options) int {
 	entries, err := listing.List(root, opts)
 	if err != nil {
-		fmt.Fprintf(stderr, "error: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "error: %v\n", err)
 		return 1
 	}
-	fmt.Fprint(stdout, tui.FlatList(entries))
+	_, _ = fmt.Fprint(stdout, tui.FlatList(entries))
 	return 0
 }
 
 func runTUI(stderr *os.File, root string, opts listing.Options, cdFile string) int {
 	model, err := tui.New(root, opts)
 	if err != nil {
-		fmt.Fprintf(stderr, "error: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "error: %v\n", err)
 		return 1
 	}
 	prog := tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	final, err := prog.Run()
 	if err != nil {
-		fmt.Fprintf(stderr, "error: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "error: %v\n", err)
 		return 1
 	}
 	if cdFile != "" {
@@ -114,7 +114,7 @@ func runTUI(stderr *os.File, root string, opts listing.Options, cdFile string) i
 			// File-based handoff: bulletproof against any stdout interaction
 			// from bubbletea's altscreen teardown. The wrapper reads the file.
 			if err := os.WriteFile(cdFile, []byte(mf.CWD()+"\n"), 0o644); err != nil {
-				fmt.Fprintf(stderr, "warning: could not write cd-file: %v\n", err)
+				_, _ = fmt.Fprintf(stderr, "warning: could not write cd-file: %v\n", err)
 			}
 		}
 	}

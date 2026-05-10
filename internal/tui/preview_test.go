@@ -35,15 +35,15 @@ func TestPreview(t *testing.T) {
 	}
 	w, h := 90, 40
 	if v := os.Getenv("BF_PREVIEW_W"); v != "" {
-		fmt.Sscanf(v, "%d", &w)
+		_, _ = fmt.Sscanf(v, "%d", &w)
 	}
 	if v := os.Getenv("BF_PREVIEW_H"); v != "" {
-		fmt.Sscanf(v, "%d", &h)
+		_, _ = fmt.Sscanf(v, "%d", &h)
 	}
 	next, _ := m.Update(tea.WindowSizeMsg{Width: w, Height: h})
 	model := next.(Model)
 	if envCursor := os.Getenv("BF_PREVIEW_CURSOR"); envCursor != "" {
-		fmt.Sscanf(envCursor, "%d", &model.cursor)
+		_, _ = fmt.Sscanf(envCursor, "%d", &model.cursor)
 		model.ensureCursorVisible()
 	}
 	if q := os.Getenv("BF_PREVIEW_SEARCH"); q != "" {

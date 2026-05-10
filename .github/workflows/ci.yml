@@ -66,7 +66,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - uses: golangci/golangci-lint-action@v6
+      - uses: golangci/golangci-lint-action@v9
         with:
           # Pin so lint runs are reproducible. Bump deliberately when a new
           # release adds linters we care about (Dependabot won't bump this

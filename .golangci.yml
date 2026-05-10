@@ -14,13 +14,12 @@ linters:
     - revive
     - staticcheck
     - unused
-
-linters-settings:
-  revive:
-    rules:
-      - name: var-naming
-      - name: package-comments
-      - name: exported
+  settings:
+    revive:
+      rules:
+        - name: var-naming
+        - name: package-comments
+        - name: exported
 
 issues:
   max-issues-per-linter: 0
