@@ -44,6 +44,15 @@ file browser with ASCII-art icons, mouse clicks, keyboard navigation, and
 
 ## Install
 
+### Homebrew (macOS / Linux)
+
+```sh
+brew install mondial7/tap/mira
+```
+
+The tap is published automatically on every release, so `brew upgrade
+mira` always pulls the latest.
+
 ### Pre-built binaries
 
 Download the binary for your platform from the
@@ -191,10 +200,6 @@ are explicitly deferred until **v1.0**:
   config-file backing for the same overlay — plus the keymap and
   default-flag surfaces that will follow the same pattern — is the
   remaining v1 piece.
-- **Homebrew tap.** Goreleaser support is wired but commented out;
-  enabling it on a `homebrew-tap` repo is on the v1 checklist so macOS
-  users can `brew install mondial7/tap/mira`.
-
 Smaller polish items are tracked in
 [GitHub issues](https://github.com/mondial7/mira/issues).
 

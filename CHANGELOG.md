@@ -22,11 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   preset (`fine` / `thick` / `dotted`), and a bionic-reading on/off
   toggle. Defaults match the v0.1 look. Settings are session-scoped;
   a persisted-config story is the remaining v1 piece.
+- **Homebrew tap (`brew install mondial7/tap/mira`).** Goreleaser now
+  publishes a formula to `mondial7/homebrew-tap` on every release.
+  The brew step is gated on a `HOMEBREW_TAP_TOKEN` repo secret and
+  cleanly skips when the token isn't present, so forks and
+  snapshot/dry-run releases still succeed.
 
 ### Planned for v1.0
 
 - Persisted settings (the `.` overlay survives across launches).
-- Optional Homebrew tap (`brew install mondial7/tap/mira`).
 
 ## [0.1.0] - 2026-05-10
 

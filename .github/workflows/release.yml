@@ -32,7 +32,8 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Optional Homebrew tap publishing — uncomment along with the
-          # `brews` block in .goreleaser.yml when a tap repo + secret exist.
-          # HOMEBREW_TAP_OWNER: ${{ github.repository_owner }}
-          # HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          # Homebrew tap publishing. When the secret isn't set this passes
+          # through as the empty string, and goreleaser's skip_upload guard
+          # in .goreleaser.yml short-circuits the brew step so the rest of
+          # the release still succeeds.
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}

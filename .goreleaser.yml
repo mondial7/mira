@@ -80,25 +80,30 @@ release:
 
     See the README for installation options.
 
-# --- Optional: Homebrew tap publishing -------------------------------------
-# This block is commented out so the default release flow works for any fork
-# without extra setup. To enable it for your fork:
+# --- Homebrew tap publishing -----------------------------------------------
+# Publishes a formula to mondial7/homebrew-tap on every release, enabling
 #
-#   1. Create a public repo called `homebrew-tap` under your GitHub user/org.
-#   2. Add a `HOMEBREW_TAP_TOKEN` repo secret with repo:write on that tap.
-#   3. Set HOMEBREW_TAP_OWNER (e.g. via the release workflow `env:` block) to
-#      your GitHub username, then uncomment the block below.
+#     brew install mondial7/tap/mira
 #
-# brews:
-#   - name: mira
-#     repository:
-#       owner: "{{ .Env.HOMEBREW_TAP_OWNER }}"
-#       name: homebrew-tap
-#       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-#     homepage: "https://github.com/{{ .Env.HOMEBREW_TAP_OWNER }}/mira"
-#     description: A pretty, interactive folder visualizer for the terminal.
-#     license: MIT
-#     test: |
-#       system "#{bin}/mira", "--version"
-#     install: |
-#       bin.install "mira"
+# Prerequisites (one-time setup, not part of this repo):
+#   1. A public mondial7/homebrew-tap repo on GitHub.
+#   2. A HOMEBREW_TAP_TOKEN repo secret on this repo, holding a PAT with
+#      contents:write on the tap repo.
+#
+# skip_upload short-circuits when the token isn't set so a release still
+# succeeds (forks, dry-runs, locally-triggered snapshots) — the formula
+# is built but not pushed.
+brews:
+  - name: mira
+    skip_upload: '{{ if eq .Env.HOMEBREW_TAP_TOKEN "" }}true{{ end }}'
+    repository:
+      owner: mondial7
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    homepage: "https://github.com/mondial7/mira"
+    description: A pretty, interactive folder visualizer for the terminal.
+    license: MIT
+    test: |
+      system "#{bin}/mira", "--version"
+    install: |
+      bin.install "mira"
