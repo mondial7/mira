@@ -106,26 +106,34 @@ banana-four --list | grep .go
 ### Quit & cd: shell wrapper
 
 `Q` only changes the parent shell's directory if you wrap the binary in
-a shell function. Drop one of these in your shell rc file:
+a shell function. The wrapper passes a temp file via `--cd-file` and
+reads it back after the TUI exits — this is bulletproof against any
+output that the terminal-restore step might emit.
+
+Drop one of these in your shell rc file:
 
 ```sh
 # ~/.bashrc / ~/.zshrc
 bf() {
-  local target
-  target=$(command banana-four --cd "$@") || return
-  if [ -n "$target" ] && [ -d "$target" ]; then
-    cd "$target"
+  local f
+  f=$(mktemp -t bf.XXXXXX) || return
+  command banana-four --cd-file "$f" "$@"
+  if [ -s "$f" ]; then
+    cd -- "$(cat "$f")"
   fi
+  rm -f "$f"
 }
 ```
 
 ```fish
 # ~/.config/fish/functions/bf.fish
 function bf
-  set target (command banana-four --cd $argv)
-  if test -n "$target" -a -d "$target"
-    cd "$target"
+  set f (mktemp -t bf.XXXXXX); or return
+  command banana-four --cd-file $f $argv
+  if test -s $f
+    cd -- (cat $f)
   end
+  rm -f $f
 end
 ```
 

@@ -36,7 +36,7 @@ func run(args []string, stdout, stderr *os.File) int {
 	dirs := fs.Bool("d", false, "list directories only")
 	noIgnore := fs.Bool("no-ignore", false, "disable .gitignore filtering")
 	listMode := fs.Bool("list", false, "force flat-list output instead of the TUI")
-	cdMode := fs.Bool("cd", false, "force TUI mode; on Q-quit print the final directory to stdout (for shell-wrapper integration)")
+	cdFile := fs.String("cd-file", "", "write the chosen directory to PATH on Q-quit (for shell-wrapper integration)")
 	showVersion := fs.Bool("version", false, "print version and exit")
 
 	fs.Usage = func() {
@@ -45,8 +45,8 @@ func run(args []string, stdout, stderr *os.File) int {
 A pretty, interactive folder visualizer.
 
 By default banana-four opens a TUI. Pipe the output or pass --list to get
-a plain listing instead. Pass --cd from a shell wrapper to capture the
-final directory on a "Q" quit.
+a plain listing instead. Pass --cd-file from a shell wrapper to capture
+the final directory on a "Q" quit.
 
 Options:
 `, filepath.Base(os.Args[0]))
@@ -76,14 +76,14 @@ Options:
 	switch {
 	case *listMode:
 		return runFlat(stdout, stderr, root, opts)
-	case *cdMode:
-		// Wrapper-driven invocation: stdout is captured by `$(...)`, the
-		// TUI still runs on /dev/tty, and the chosen path goes to stdout.
-		return runTUI(stdout, stderr, root, opts, true)
+	case *cdFile != "":
+		// Wrapper-driven invocation: TUI runs as normal on the inherited
+		// stdout/stdin, and the chosen path is written to the file on Q.
+		return runTUI(stderr, root, opts, *cdFile)
 	case !isTTY(stdout):
 		return runFlat(stdout, stderr, root, opts)
 	default:
-		return runTUI(stdout, stderr, root, opts, false)
+		return runTUI(stderr, root, opts, "")
 	}
 }
 
@@ -97,37 +97,25 @@ func runFlat(stdout, stderr *os.File, root string, opts listing.Options) int {
 	return 0
 }
 
-func runTUI(stdout, stderr *os.File, root string, opts listing.Options, emitCWD bool) int {
+func runTUI(stderr *os.File, root string, opts listing.Options, cdFile string) int {
 	model, err := tui.New(root, opts)
 	if err != nil {
 		fmt.Fprintf(stderr, "error: %v\n", err)
 		return 1
 	}
-
-	progOpts := []tea.ProgramOption{tea.WithAltScreen(), tea.WithMouseCellMotion()}
-	// In --cd mode our stdout is captured by `$(banana-four --cd)`, so we
-	// can't let bubbletea render into it (the wrapper would otherwise
-	// `cd` into a string of escape codes). Route the TUI through
-	// /dev/tty and keep stdout free for the chosen-directory print.
-	if emitCWD {
-		tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
-		if err != nil {
-			fmt.Fprintf(stderr, "error: --cd needs a controlling terminal: %v\n", err)
-			return 1
-		}
-		defer tty.Close()
-		progOpts = append(progOpts, tea.WithInput(tty), tea.WithOutput(tty))
-	}
-
-	prog := tea.NewProgram(model, progOpts...)
+	prog := tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	final, err := prog.Run()
 	if err != nil {
 		fmt.Fprintf(stderr, "error: %v\n", err)
 		return 1
 	}
-	if emitCWD {
+	if cdFile != "" {
 		if mf, ok := final.(tui.Model); ok && mf.QuitWithCD {
-			fmt.Fprintln(stdout, mf.CWD())
+			// File-based handoff: bulletproof against any stdout interaction
+			// from bubbletea's altscreen teardown. The wrapper reads the file.
+			if err := os.WriteFile(cdFile, []byte(mf.CWD()+"\n"), 0o644); err != nil {
+				fmt.Fprintf(stderr, "warning: could not write cd-file: %v\n", err)
+			}
 		}
 	}
 	return 0
