@@ -11,8 +11,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: banana-four version
-      description: Run `banana-four --version`
+      label: mira version
+      description: Run `mira --version`
       placeholder: v0.1.0
     validations:
       required: true
@@ -30,7 +30,7 @@ body:
       description: Smallest possible sequence that triggers the bug.
       placeholder: |
         1. cd into a repo with a .gitignore
-        2. run `banana-four`
+        2. run `mira`
         3. press Enter on a folder...
     validations:
       required: true

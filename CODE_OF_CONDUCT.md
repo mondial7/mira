@@ -38,9 +38,11 @@ Examples of unacceptable behavior:
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the project maintainers via the email listed in
-[SECURITY.md](SECURITY.md). All complaints will be reviewed and investigated
-promptly and fairly.
+reported to the project maintainers via GitHub's
+[private vulnerability reporting](https://github.com/mondial7/mira/security/advisories/new)
+form (despite the name, it works for sensitive non-security reports too —
+nothing posted there is public). All complaints will be reviewed and
+investigated promptly and fairly.
 
 Maintainers are obligated to respect the privacy and security of the reporter
 of any incident.

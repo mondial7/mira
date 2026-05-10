@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>banana-four — a pretty folder visualizer for your terminal</title>
-  <meta name="description" content="banana-four is a desktop-style terminal file browser with ASCII-art icons, mouse navigation, and .gitignore-aware listing.">
+  <title>mira — a pretty folder visualizer for your terminal</title>
+  <meta name="description" content="mira is a desktop-style terminal file browser with ASCII-art icons, mouse navigation, and .gitignore-aware listing.">
   <meta name="theme-color" content="#0e0f12">
-  <meta property="og:title" content="banana-four">
+  <meta property="og:title" content="mira">
   <meta property="og:description" content="A pretty, interactive folder visualizer for the terminal.">
   <meta property="og:type" content="website">
   <link rel="stylesheet" href="style.css">
@@ -18,12 +18,12 @@
     <div class="container">
       <div class="brand">
         <span class="prompt">$</span>
-        <h1>banana-four</h1>
+        <h1>mira</h1>
       </div>
       <p class="tagline">A pretty, interactive folder visualizer for the terminal — desktop file-manager vibes, single-binary install, gitignore-aware out of the box.</p>
       <div class="cta">
-        <a class="btn primary" href="https://github.com/mondial7/banana-four/releases/latest">Download latest</a>
-        <a class="btn" href="https://github.com/mondial7/banana-four">View on GitHub</a>
+        <a class="btn primary" href="https://github.com/mondial7/mira/releases/latest">Download latest</a>
+        <a class="btn" href="https://github.com/mondial7/mira">View on GitHub</a>
       </div>
     </div>
   </header>
@@ -35,9 +35,9 @@
           <span class="dot red"></span>
           <span class="dot yellow"></span>
           <span class="dot green"></span>
-          <span class="title">banana-four ~/code/banana-four</span>
+          <span class="title">mira ~/code/mira</span>
         </div>
-        <pre class="screen"><span class="path">▸ /Users/you/code/banana-four</span>
+        <pre class="screen"><span class="path">▸ /Users/you/code/mira</span>
 
 <span class="muted">╭──────────────────╮</span>  <span class="sel">┏━━━━━━━━━━━━━━━━━━┓</span>  <span class="folder">╭──────────────────╮</span>  <span class="file">╭┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈╮</span>
 <span class="muted">│ ↑  ..            │</span>  <span class="sel">┃ ▶  docs          ┃</span>  <span class="folder">│ ▸  internal      │</span>  <span class="file">┊ ·  README.md     ┊</span>
@@ -50,12 +50,12 @@
                                                  <span class="critter">( o.o )   ( o.o )</span>
                                                  <span class="critter"> > ^ <     v=-=v</span>
 
-<span class="muted">5 items · ↑↓←→/wasd move · ⏎ open · ⌫ up · h hidden · Q cd here · q quit</span></pre>
+<span class="muted">↑↓←→/wasd move · ⏎ open · ⌫ up · h hidden · f find · Q cd here · q quit</span></pre>
       </div>
     </section>
 
     <section class="container">
-      <h2>Why banana-four?</h2>
+      <h2>Why mira?</h2>
       <div class="grid">
         <article>
           <h3>Single layer, like a desktop</h3>
@@ -63,7 +63,7 @@
         </article>
         <article>
           <h3>Mouse + keyboard</h3>
-          <p>Arrow keys, hjkl, or just click. Whatever your hands prefer.</p>
+          <p>Arrow keys, wasd, or just click. Whatever your hands prefer.</p>
         </article>
         <article>
           <h3>Gitignore aware</h3>
@@ -79,7 +79,7 @@
         </article>
         <article>
           <h3>Read-only by design</h3>
-          <p>banana-four never writes, executes, or transmits. See <a href="https://github.com/mondial7/banana-four/blob/main/SECURITY.md">SECURITY.md</a>.</p>
+          <p>mira never writes, executes, or transmits. See <a href="https://github.com/mondial7/mira/blob/main/SECURITY.md">SECURITY.md</a>.</p>
         </article>
       </div>
     </section>
@@ -87,9 +87,9 @@
     <section class="container">
       <h2>Install</h2>
       <h3>Go</h3>
-      <pre class="snippet">go install github.com/mondial7/banana-four@latest</pre>
+      <pre class="snippet">go install github.com/mondial7/mira@latest</pre>
       <h3>Pre-built binaries</h3>
-      <p>Grab a tarball for your platform from the <a href="https://github.com/mondial7/banana-four/releases/latest">releases page</a>. Each release ships SHA-256 checksums and an SBOM you can verify before extracting.</p>
+      <p>Grab a tarball for your platform from the <a href="https://github.com/mondial7/mira/releases/latest">releases page</a>. Each release ships SHA-256 checksums and an SBOM you can verify before extracting.</p>
     </section>
 
     <section class="container">
@@ -111,6 +111,26 @@
     </section>
 
     <section class="container">
+      <h2>Status — v0.1</h2>
+      <p>
+        v0.1 is the first public release. Two items are explicitly
+        deferred until v1.0:
+      </p>
+      <ul>
+        <li>
+          The <kbd>Q</kbd> quit-and-<code>cd</code> handoff is known to
+          be broken under some shells/terminals — plain <kbd>q</kbd>
+          quits cleanly. Fix planned before v1.
+        </li>
+        <li>
+          A first-class settings view + customisation pattern (theme,
+          keymap, default flags) is on the way before v1. Until then
+          the TUI is intentionally zero-configuration.
+        </li>
+      </ul>
+    </section>
+
+    <section class="container">
       <h2>Built with</h2>
       <ul class="links">
         <li><a href="https://github.com/charmbracelet/bubbletea">bubbletea</a> — the Elm-architecture TUI framework</li>
@@ -122,7 +142,7 @@
 
   <footer>
     <div class="container">
-      <p>MIT licensed · <a href="https://github.com/mondial7/banana-four">source</a> · <a href="https://github.com/mondial7/banana-four/blob/main/SECURITY.md">security</a> · <a href="https://github.com/mondial7/banana-four/blob/main/CONTRIBUTING.md">contribute</a></p>
+      <p>MIT licensed · <a href="https://github.com/mondial7/mira">source</a> · <a href="https://github.com/mondial7/mira/blob/main/SECURITY.md">security</a> · <a href="https://github.com/mondial7/mira/blob/main/CONTRIBUTING.md">contribute</a></p>
     </div>
   </footer>
 </body>

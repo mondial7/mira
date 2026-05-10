@@ -304,7 +304,7 @@ func TestList_PopulatesChildCountForDirs(t *testing.T) {
 }
 
 func TestList_NonexistentReturnsError(t *testing.T) {
-	_, err := List("/this/should/not/exist/banana-four", Options{})
+	_, err := List("/this/should/not/exist/mira", Options{})
 	if err == nil {
 		t.Fatal("expected error for nonexistent path")
 	}

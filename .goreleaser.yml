@@ -1,15 +1,15 @@
 version: 2
 
-project_name: banana-four
+project_name: mira
 
 before:
   hooks:
     - go mod tidy
 
 builds:
-  - id: banana-four
+  - id: mira
     main: .
-    binary: banana-four
+    binary: mira
     env:
       - CGO_ENABLED=0
     flags:
@@ -76,7 +76,7 @@ release:
     ---
     ## Install
     Download the appropriate archive for your platform, verify the SHA-256
-    against `checksums.txt`, extract, and put `banana-four` on your `PATH`.
+    against `checksums.txt`, extract, and put `mira` on your `PATH`.
 
     See the README for installation options.
 
@@ -90,15 +90,15 @@ release:
 #      your GitHub username, then uncomment the block below.
 #
 # brews:
-#   - name: banana-four
+#   - name: mira
 #     repository:
 #       owner: "{{ .Env.HOMEBREW_TAP_OWNER }}"
 #       name: homebrew-tap
 #       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-#     homepage: "https://github.com/{{ .Env.HOMEBREW_TAP_OWNER }}/banana-four"
+#     homepage: "https://github.com/{{ .Env.HOMEBREW_TAP_OWNER }}/mira"
 #     description: A pretty, interactive folder visualizer for the terminal.
 #     license: MIT
 #     test: |
-#       system "#{bin}/banana-four", "--version"
+#       system "#{bin}/mira", "--version"
 #     install: |
-#       bin.install "banana-four"
+#       bin.install "mira"

@@ -2,7 +2,7 @@
 
 ## Threat model
 
-`banana-four` is a **read-only** terminal file browser. It walks
+`mira` is a **read-only** terminal file browser. It walks
 directories, reads metadata (`os.Lstat` / `os.ReadDir`), and reads
 `.gitignore` text contents. It does **not**:
 
@@ -31,12 +31,12 @@ security fixes at the maintainers' discretion.
 Please **do not** open a public GitHub issue for security problems.
 
 Use GitHub's
-[private vulnerability reporting](https://github.com/mondial7/banana-four/security/advisories/new)
+[private vulnerability reporting](https://github.com/mondial7/mira/security/advisories/new)
 instead. Include:
 
 - A description of the issue.
 - Steps to reproduce.
-- The version of `banana-four` affected.
+- The version of `mira` affected.
 - Your assessment of the impact.
 
 You should receive an acknowledgement within 5 business days. We will work

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Known issues
+
+- **`Q` quit-and-`cd` is broken in v0.1.** Under some shells/terminals
+  the parent shell does not follow into the chosen directory even with
+  the documented `m` wrapper. A fix is planned before v1.0. Plain `q`
+  (lowercase) quits cleanly and is unaffected.
+
+### Planned for v1.0
+
+- **Settings view + customisation pattern.** First-class settings
+  screen with the conventions that future customisation surfaces
+  (theme, keymap, default flags) will follow. Until then the TUI is
+  intentionally zero-configuration.
+- Fix for the `Q` quit-and-`cd` handoff above.
+- Optional Homebrew tap (`brew install mondial7/tap/mira`).
+
+## [0.1.0] - 2026-05-10
+
+First public release of `mira` (the project was previously codenamed
+`banana-four` while it was private; nothing under that name was ever
+published). Everything below previously sat under "Unreleased".
+
 ### Changed
 
 - Letter-based navigation moved from `hjkl` (vim-style) to `adws`
@@ -58,3 +80,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Hidden file toggle (`-a`) and dirs-only filter (`-d`).
 - Pre-built binaries for darwin/linux/windows on amd64 and arm64,
   published by GoReleaser with checksums + SBOM.
+
+[Unreleased]: https://github.com/mondial7/mira/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/mondial7/mira/releases/tag/v0.1.0

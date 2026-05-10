@@ -1,4 +1,4 @@
-# Contributing to banana-four
+# Contributing to mira
 
 Thanks for taking the time to contribute! This document is intentionally
 short — most things follow standard Go conventions.
@@ -13,9 +13,9 @@ By participating, you agree to abide by the
 Requirements: **Go 1.25+** and `git`. No other tooling is required.
 
 ```sh
-git clone https://github.com/mondial7/banana-four
-cd banana-four
-go test ./...
+git clone https://github.com/mondial7/mira
+cd mira
+make test
 go run .
 ```
 
@@ -62,14 +62,14 @@ GoReleaser uses these prefixes to build the changelog automatically.
 4. Make sure `go test ./...`, `go vet ./...`, and `gofmt` are clean.
 5. Open a PR. Describe **what** changed and **why**.
 
-Maintainers will review as soon as they can. Be patient — banana-four is a
+Maintainers will review as soon as they can. Be patient — mira is a
 side-project.
 
 ## Reporting bugs
 
 Open an issue with:
 
-- The version (`banana-four --version`).
+- The version (`mira --version`).
 - Your OS and terminal.
 - Steps to reproduce.
 - What you expected vs. what happened.

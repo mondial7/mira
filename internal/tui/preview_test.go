@@ -9,7 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 
-	"github.com/mondial7/banana-four/internal/listing"
+	"github.com/mondial7/mira/internal/listing"
 )
 
 // TestPreview is a manual visualisation aid: run `go test ./internal/tui

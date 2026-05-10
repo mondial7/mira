@@ -68,5 +68,8 @@ jobs:
           cache: true
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: latest
+          # Pin so lint runs are reproducible. Bump deliberately when a new
+          # release adds linters we care about (Dependabot won't bump this
+          # for us — it's an action input, not a Go module).
+          version: v2.12.2
           args: --timeout=5m

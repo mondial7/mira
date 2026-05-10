@@ -1,4 +1,4 @@
-module github.com/mondial7/banana-four
+module github.com/mondial7/mira
 
 go 1.25.8
 

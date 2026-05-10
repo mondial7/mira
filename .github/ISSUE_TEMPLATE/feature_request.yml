@@ -6,7 +6,7 @@ body:
     id: problem
     attributes:
       label: What problem are you trying to solve?
-      description: What were you doing when you wished banana-four did this?
+      description: What were you doing when you wished mira did this?
     validations:
       required: true
   - type: textarea

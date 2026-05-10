@@ -1,12 +1,12 @@
-// Command banana-four is an interactive terminal file browser. By default
-// it launches a desktop-style TUI with ASCII-art folder icons and mouse +
+// Command mira is an interactive terminal file browser. By default it
+// launches a desktop-style TUI with ASCII-art folder icons and mouse +
 // keyboard navigation. When stdout is not a TTY (e.g. piping into another
 // command) it prints a plain, gitignore-aware listing of the current
 // directory instead, so it composes well in scripts.
 //
-// Pass --cd when invoking from a wrapper shell function: that forces the
-// TUI on /dev/tty even when stdout is captured, and on a "Q" quit the
-// chosen directory is printed to stdout so the wrapper can `cd` to it.
+// Pass --cd-file when invoking from a wrapper shell function: the chosen
+// directory is written to that path on a "Q" quit so the wrapper can
+// `cd` into it.
 package main
 
 import (
@@ -17,8 +17,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/mondial7/banana-four/internal/listing"
-	"github.com/mondial7/banana-four/internal/tui"
+	"github.com/mondial7/mira/internal/listing"
+	"github.com/mondial7/mira/internal/tui"
 )
 
 // version is overridden at build time via -ldflags by goreleaser.
@@ -29,7 +29,7 @@ func main() {
 }
 
 func run(args []string, stdout, stderr *os.File) int {
-	fs := flag.NewFlagSet("banana-four", flag.ContinueOnError)
+	fs := flag.NewFlagSet("mira", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 
 	all := fs.Bool("a", false, "show hidden (dotfile) entries")
@@ -44,8 +44,8 @@ func run(args []string, stdout, stderr *os.File) int {
 
 A pretty, interactive folder visualizer.
 
-By default banana-four opens a TUI. Pipe the output or pass --list to get
-a plain listing instead. Pass --cd-file from a shell wrapper to capture
+By default mira opens a TUI. Pipe the output or pass --list to get a
+plain listing instead. Pass --cd-file from a shell wrapper to capture
 the final directory on a "Q" quit.
 
 Options:
