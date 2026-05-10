@@ -96,12 +96,17 @@ banana-four --list | grep .go
 | `Home` / `g`              | Jump to first item                            |
 | `End` / `G`               | Jump to last item                             |
 | `h`                       | Toggle hidden (dotfile) entries               |
+| `f`                       | Find — start a fuzzy search                   |
 | `q` / `Ctrl-C`            | Quit                                          |
 | `Q`                       | Quit and `cd` into the explored directory †   |
 | Mouse click on a folder   | Enter that folder                             |
 | Mouse click on `..`       | Go up                                         |
 
 † Requires the shell wrapper from the next section.
+
+When the find bar is open: type to filter (case-insensitive subsequence
+match), arrow keys to move within matches, `Enter` to open the
+highlighted folder, `Esc` to cancel and restore the full listing.
 
 ### Quit & cd: shell wrapper
 

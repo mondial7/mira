@@ -315,6 +315,118 @@ func TestModel_ScrollIndicatorReflectsState(t *testing.T) {
 	}
 }
 
+func TestFuzzyMatch(t *testing.T) {
+	cases := []struct {
+		query, target string
+		want          bool
+	}{
+		{"", "anything", true},
+		{"abc", "abcd", true},
+		{"acd", "abcd", true},  // subsequence
+		{"acb", "abcd", false}, // out of order
+		{"DOC", "documents", true},
+		{"docs", "doc", false}, // longer than target
+		{"foo", "anything", false},
+	}
+	for _, tc := range cases {
+		if got := fuzzyMatch(tc.query, tc.target); got != tc.want {
+			t.Errorf("fuzzyMatch(%q, %q) = %v, want %v", tc.query, tc.target, got, tc.want)
+		}
+	}
+}
+
+func TestModel_FStartsSearch(t *testing.T) {
+	root := scaffoldDir(t)
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if m.searchMode {
+		t.Fatal("search mode should default off")
+	}
+	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'f'}})
+	m = next.(Model)
+	if !m.searchMode {
+		t.Fatal("'f' should enter search mode")
+	}
+	if m.searchQuery != "" {
+		t.Errorf("query should start empty, got %q", m.searchQuery)
+	}
+}
+
+func TestModel_SearchFiltersLive(t *testing.T) {
+	root := scaffoldDir(t) // alpha, beta, one.txt, two.txt
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	// Enter search and type "al" — only "alpha" contains the subsequence.
+	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'f'}})
+	m = next.(Model)
+	for _, c := range "al" {
+		next, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{c}})
+		m = next.(Model)
+	}
+	if len(m.entries) != 1 || m.entries[0].Name != "alpha" {
+		t.Errorf("after typing 'al', entries = %v, want only [alpha]", m.entries)
+	}
+	if m.fullEntries == nil || len(m.fullEntries) != 4 {
+		t.Errorf("fullEntries should hold the original 4 entries, got %d", len(m.fullEntries))
+	}
+}
+
+func TestModel_SearchEscRestores(t *testing.T) {
+	root := scaffoldDir(t)
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	originalCount := len(m.entries)
+
+	// f then a string that won't match anything in the scaffold.
+	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'f'}})
+	m = next.(Model)
+	for _, c := range "zqj" {
+		next, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{c}})
+		m = next.(Model)
+	}
+	if len(m.entries) != 0 {
+		t.Errorf("expected 0 matches for 'zqj', got %d", len(m.entries))
+	}
+
+	// Esc restores everything.
+	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = next.(Model)
+	if m.searchMode {
+		t.Errorf("esc should exit search")
+	}
+	if len(m.entries) != originalCount {
+		t.Errorf("after esc entries = %d, want %d", len(m.entries), originalCount)
+	}
+}
+
+func TestModel_SearchBackspaceShrinks(t *testing.T) {
+	root := scaffoldDir(t)
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'f'}})
+	m = next.(Model)
+	for _, c := range "alp" {
+		next, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{c}})
+		m = next.(Model)
+	}
+	if m.searchQuery != "alp" {
+		t.Fatalf("query = %q, want alp", m.searchQuery)
+	}
+	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+	m = next.(Model)
+	if m.searchQuery != "al" {
+		t.Errorf("after backspace query = %q, want al", m.searchQuery)
+	}
+}
+
 func TestModel_QuitKey(t *testing.T) {
 	root := scaffoldDir(t)
 	m, err := New(root, listing.Options{})

@@ -11,8 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Letter-based navigation moved from `hjkl` (vim-style) to `adws`
   (gaming-style). `h` is now reserved for the hidden-toggle.
+- Quit-and-cd now uses `--cd-file PATH` instead of `--cd` for a
+  bulletproof file-based handoff (avoids stdout-capture fragility).
+  The shell wrapper accordingly switched to `mktemp` + `cat`.
 
 ### Added
+
+- `f` opens a fuzzy-search find bar replacing the summary line.
+  Case-insensitive subsequence match, live-filtered cards, esc cancels,
+  enter opens the highlighted match.
+- Bionic Reading on entry names: the leading half of each
+  word-segment (split on `_ - . space /`) is bolded so the eye can
+  pattern-match faster. Skipped on `..` and selected entries.
+- Viewport scrolling: tall listings no longer clip the top — content
+  auto-scrolls to keep the cursor visible, with ▲/▼ amber indicators
+  in the path bar's top-right when content extends beyond the viewport.
 
 - `h` toggles dotfile visibility at runtime; hidden entries render in a
   dimmed-italic style so they're visible but obviously secondary.

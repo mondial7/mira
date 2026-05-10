@@ -46,5 +46,10 @@ func TestPreview(t *testing.T) {
 		fmt.Sscanf(envCursor, "%d", &model.cursor)
 		model.ensureCursorVisible()
 	}
+	if q := os.Getenv("BF_PREVIEW_SEARCH"); q != "" {
+		model.startSearch()
+		model.searchQuery = q
+		model.updateFilter()
+	}
 	fmt.Println("\n" + model.View())
 }

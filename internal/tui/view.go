@@ -97,11 +97,13 @@ func (m Model) scrollIndicator() string {
 	return up + down
 }
 
-// renderSummary draws the second header line with a quick recap of the
-// current directory: how many folders + files it holds and their total
-// size. The size is prefixed with "~" when the recursive walk hit its
-// budget cap and so the number is approximate.
+// renderSummary draws the second header line. In search mode it shows
+// the search bar (label + query + match count) instead of the directory
+// summary so the user always knows what they're typing into.
 func (m Model) renderSummary() string {
+	if m.searchMode {
+		return m.renderSearchBar()
+	}
 	folders := plural(m.totalDirs, "folder", "folders")
 	files := plural(m.totalFiles, "file", "files")
 
@@ -114,8 +116,21 @@ func (m Model) renderSummary() string {
 	return helpStyle.Render("  " + strings.Join(parts, " · "))
 }
 
+// renderSearchBar renders the in-progress search query plus a live
+// match counter. The cursor is a vertical-bar glyph after the query.
+func (m Model) renderSearchBar() string {
+	label := helpStyle.Render("  find: ")
+	query := searchQueryStyle.Render(m.searchQuery)
+	cursor := searchCursorStyle.Render("▍")
+	count := helpStyle.Render(fmt.Sprintf("  · %d / %d matches", len(m.entries), len(m.fullEntries)))
+	return label + query + cursor + count
+}
+
 func (m Model) renderFooter() string {
-	help := "↑↓←→/wasd move · ⏎ open · ⌫ up · h hidden · Q cd here · q quit"
+	help := "↑↓←→/wasd move · ⏎ open · ⌫ up · h hidden · f find · Q cd here · q quit"
+	if m.searchMode {
+		help = "type to filter · ↑↓←→ move · ⏎ open · ⌫ erase · esc cancel"
+	}
 	if m.err != nil {
 		return errorStyle.Render("error: "+m.err.Error()) + "\n" + helpStyle.Render(help)
 	}

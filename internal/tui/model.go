@@ -2,6 +2,7 @@ package tui
 
 import (
 	"path/filepath"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -68,6 +69,13 @@ type Model struct {
 	// in the viewport. It's adjusted automatically as the cursor moves
 	// (see ensureCursorVisible) and on window resizes.
 	scrollOffset int
+
+	// Fuzzy search state. While searchMode is true, m.entries is the
+	// filtered subset and m.fullEntries holds the original listing.
+	// Exiting search restores m.entries from m.fullEntries.
+	searchMode  bool
+	searchQuery string
+	fullEntries []listing.Entry
 }
 
 // New constructs a Model rooted at start. It returns an error only when
@@ -331,6 +339,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.searchMode {
+		return m.handleSearchKey(msg)
+	}
 	switch msg.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
@@ -364,9 +375,141 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.goUp()
 	case "h":
 		m.toggleHidden()
+	case "f":
+		m.startSearch()
 	}
 	m.ensureCursorVisible()
 	return m, nil
+}
+
+// handleSearchKey is the modal key handler used while searchMode is on.
+// Letter keys feed the query (so a/d/w/s/h/q/Q lose their nav meaning),
+// arrow keys still navigate matches, esc cancels, ctrl+c always quits,
+// and enter opens the highlighted match.
+func (m Model) handleSearchKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		return m, tea.Quit
+	case "esc":
+		m.endSearch()
+	case "enter":
+		m.activate(m.cursor)
+	case "backspace":
+		if r := []rune(m.searchQuery); len(r) > 0 {
+			m.searchQuery = string(r[:len(r)-1])
+			m.updateFilter()
+		}
+	case "left":
+		if m.cursor > 0 {
+			m.cursor--
+		}
+	case "right":
+		if m.cursor < m.totalItems()-1 {
+			m.cursor++
+		}
+	case "up":
+		if m.cursor-m.cols() >= 0 {
+			m.cursor -= m.cols()
+		}
+	case "down":
+		if m.cursor+m.cols() < m.totalItems() {
+			m.cursor += m.cols()
+		}
+	default:
+		if isPrintable(msg) {
+			m.searchQuery += string(msg.Runes)
+			m.updateFilter()
+		}
+	}
+	m.ensureCursorVisible()
+	return m, nil
+}
+
+// isPrintable reports whether a key message represents typed character
+// input (any rune ≥ space, no control codes, no non-rune events).
+func isPrintable(msg tea.KeyMsg) bool {
+	if msg.Type != tea.KeyRunes || len(msg.Runes) == 0 {
+		return false
+	}
+	for _, r := range msg.Runes {
+		if r < 32 || r == 127 {
+			return false
+		}
+	}
+	return true
+}
+
+// startSearch enters fuzzy-search mode, snapshotting the current
+// listing so it can be restored on cancel. The cursor resets to 0 so
+// the first match (after any keystroke) is the initial selection.
+func (m *Model) startSearch() {
+	if m.searchMode {
+		return
+	}
+	m.searchMode = true
+	m.searchQuery = ""
+	m.fullEntries = m.entries
+	m.cursor = 0
+	m.scrollOffset = 0
+}
+
+// endSearch exits search mode and restores the un-filtered listing.
+// Safe to call when not in search mode (no-op).
+func (m *Model) endSearch() {
+	if !m.searchMode {
+		return
+	}
+	m.searchMode = false
+	m.searchQuery = ""
+	if m.fullEntries != nil {
+		m.entries = m.fullEntries
+		m.fullEntries = nil
+	}
+	m.cursor = 0
+	m.scrollOffset = 0
+	m.recomputeAggregates()
+	m.cellW = m.computeCellWidth()
+}
+
+// updateFilter re-runs the fuzzy match against the current query and
+// replaces m.entries with the matching subset. Called after every
+// keystroke that changes m.searchQuery.
+func (m *Model) updateFilter() {
+	if !m.searchMode {
+		return
+	}
+	filtered := make([]listing.Entry, 0, len(m.fullEntries))
+	for _, e := range m.fullEntries {
+		if fuzzyMatch(m.searchQuery, e.Name) {
+			filtered = append(filtered, e)
+		}
+	}
+	m.entries = filtered
+	if m.cursor >= m.totalItems() {
+		m.cursor = 0
+	}
+	m.scrollOffset = 0
+	m.recomputeAggregates()
+	m.cellW = m.computeCellWidth()
+}
+
+// fuzzyMatch reports whether every rune of query appears in target in
+// order, case-insensitively. An empty query matches everything.
+func fuzzyMatch(query, target string) bool {
+	qr := []rune(strings.ToLower(query))
+	if len(qr) == 0 {
+		return true
+	}
+	qi := 0
+	for _, c := range strings.ToLower(target) {
+		if c == qr[qi] {
+			qi++
+			if qi == len(qr) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // toggleHidden flips the ShowHidden option and re-lists the directory.
@@ -395,6 +538,8 @@ func (m Model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 
 // activate opens the item at i: the synthetic ".." goes up; directories
 // descend; regular files are no-ops (kept for future preview support).
+// Search state is cleared on descent — the new directory has its own
+// listing and the user almost certainly wants to see all of it.
 func (m *Model) activate(i int) {
 	if m.isParent(i) {
 		m.goUp()
@@ -404,6 +549,12 @@ func (m *Model) activate(i int) {
 	if !e.IsDir {
 		return
 	}
+
+	// Drop any active search before refresh; refresh() repopulates entries.
+	m.searchMode = false
+	m.searchQuery = ""
+	m.fullEntries = nil
+
 	prev := m.cwd
 	m.cwd = e.Path
 	m.cursor = 0

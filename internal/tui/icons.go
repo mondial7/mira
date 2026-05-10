@@ -92,4 +92,6 @@ var (
 	helpStyle            = lipgloss.NewStyle().Foreground(colHelp)
 	errorStyle           = lipgloss.NewStyle().Bold(true).Foreground(colErr)
 	scrollIndicatorStyle = lipgloss.NewStyle().Foreground(colAccent).Bold(true)
+	searchQueryStyle     = lipgloss.NewStyle().Foreground(colNameSel).Bold(true)
+	searchCursorStyle    = lipgloss.NewStyle().Foreground(colAccent).Bold(true)
 )
