@@ -136,8 +136,8 @@ three knobs that change the look without leaving the TUI:
 | Borders   | `fine`, `thick`, `dotted`       | `fine`  |
 | Bionic    | `on`, `off`                     | `on`    |
 
-Inside the overlay, `↑`/`↓` (or `j`/`k`) moves between rows, `←`/`→`
-(or `h`/`l`) cycles the focused value, `Enter` cycles forward, and
+Inside the overlay, `↑`/`↓` (or `w`/`s`) moves between rows, `←`/`→`
+(or `a`/`d`) cycles the focused value, `Enter` cycles forward, and
 `Esc` or `.` closes the overlay. Settings live for the session; a
 persisted-config story will land alongside the rest of the v1
 customisation surface.

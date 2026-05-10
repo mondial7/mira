@@ -411,25 +411,26 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 // handleSettingsKey is the modal key handler used while settingsMode is
-// on. ↑/↓ moves between rows, ←/→ cycles the focused row's value (and
-// enter/space toggles bionic), and "." or esc closes the overlay.
+// on. ↑/↓ (or w/s) moves between rows, ←/→ (or a/d) cycles the focused
+// row's value, enter/space toggles bionic, and "." or esc closes the
+// overlay.
 func (m Model) handleSettingsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c", "q":
 		return m, tea.Quit
 	case "esc", ".":
 		m.closeSettings()
-	case "up", "w", "k":
+	case "up", "w":
 		if m.settingsCursor > 0 {
 			m.settingsCursor--
 		}
-	case "down", "s", "j":
+	case "down", "s":
 		if m.settingsCursor < len(settingsFields)-1 {
 			m.settingsCursor++
 		}
-	case "left", "a", "h":
+	case "left", "a":
 		m.adjustSetting(-1)
-	case "right", "d", "l":
+	case "right", "d":
 		m.adjustSetting(1)
 	case "enter", " ":
 		m.adjustSetting(1)

@@ -524,7 +524,7 @@ func (m Model) renderSettingsView() string {
 	}
 
 	b.WriteString("\n")
-	b.WriteString("  " + st.help.Render("↑↓ move · ←→ change · ⏎ cycle · esc / . done"))
+	b.WriteString("  " + st.help.Render("↑↓/ws move · ←→/ad change · ⏎ cycle · esc / . done"))
 	b.WriteString("\n\n")
 	b.WriteString(renderCritters(m.viewWidth(), m.animFrame, 0, st.critter))
 	return b.String()
