@@ -174,7 +174,11 @@ a:hover, a:focus {
   font-weight: 700;
 }
 .muted { color: var(--rose-dim); }
-.sel { color: var(--accent); font-weight: 700; }
+.sel { color: var(--accent); }
+/* Bold lives on inner <strong> tags rather than the whole .sel span so
+   the border characters stay at regular weight — bold box-drawing
+   glyphs can drift in width between fonts. */
+.sel strong { font-weight: 700; }
 /* Folder + file share the rose name color — in the actual rose theme the
    distinction is in the border-glyph set, not the text colour. */
 .folder, .file { color: var(--rose-name); }
