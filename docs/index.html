@@ -113,47 +113,6 @@
     </section>
 
     <section class="container">
-      <h2>What's new on the road to v1</h2>
-      <ul>
-        <li>
-          <strong>Settings overlay (<kbd>.</kbd>).</strong> Three knobs
-          live in a modal screen: colour theme
-          (<code>slate</code> / <code>forest</code> / <code>ocean</code>
-          / <code>rose</code>), border preset
-          (<code>fine</code> / <code>thick</code> / <code>dotted</code>),
-          and a bionic-reading on/off toggle.
-        </li>
-        <li>
-          <strong>Persisted choices.</strong> Overlay settings survive
-          across launches via a JSON file at
-          <code>os.UserConfigDir()/mira/config.json</code>. Atomic
-          writes; missing or corrupt files silently fall back to
-          defaults so the TUI always launches. The file is created
-          only when you actually change a value.
-        </li>
-        <li>
-          <strong><kbd>Q</kbd> → <kbd>e</kbd> for "end here".</strong>
-          The capital-Q quit-and-<code>cd</code> binding has been
-          retired in favour of lowercase <kbd>e</kbd> alongside a
-          file-based handoff (<code>--cd-file</code>) that fixes the
-          v0.1 bug where some shells/terminals didn't follow the
-          chosen directory.
-        </li>
-        <li>
-          <strong>Fuzzy find (<kbd>f</kbd>).</strong> Live
-          subsequence-match filter on the current folder; <kbd>Enter</kbd>
-          opens the highlighted match, <kbd>Esc</kbd> restores the full
-          listing.
-        </li>
-      </ul>
-      <p>
-        Customisable keymap and default-flag surfaces are next on the
-        v1 path — they'll piggyback on the same config file the
-        overlay already writes.
-      </p>
-    </section>
-
-    <section class="container">
       <h2>Built with</h2>
       <ul class="links">
         <li><a href="https://github.com/charmbracelet/bubbletea">bubbletea</a> — the Elm-architecture TUI framework</li>

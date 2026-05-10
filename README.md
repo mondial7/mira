@@ -147,16 +147,13 @@ Choices persist between launches in a JSON file at
 on Linux, and `%AppData%\mira\config.json` on Windows. The file is
 written only when you actually change a value; opening the overlay
 and dismissing it without touching anything does not create one.
-Delete the file to reset to defaults. Keymap and default-flag
-surfaces will land in the same file as v1 progresses.
+Delete the file to reset to defaults.
 
 ### End here & cd: shell wrapper
 
-> **Status:** the original capital-`Q` binding was renamed to `e`
-> ("end here") on the road to v1, alongside a rework of the cd handoff
-> that fixes a v0.1 bug where some shells/terminals didn't follow the
-> chosen directory. Plain `q` (lowercase) quits without changing
-> directory and is unaffected.
+`e` ("end here") quits the TUI and asks the parent shell to `cd` into
+whatever directory you ended up exploring. Plain `q` (lowercase)
+quits without changing directory.
 
 `e` only changes the parent shell's directory if you wrap the binary in
 a shell function. The wrapper passes a temp file via `--cd-file` and
@@ -193,23 +190,6 @@ end
 Now `m` opens the TUI; press `e` to end the session and have your shell
 follow you into whatever directory you ended up exploring. Plain `q`
 exits without changing the directory.
-
-## Roadmap to v1.0
-
-`v0.1` is the first public release — usable end-to-end, but a few items
-are explicitly deferred until **v1.0**:
-
-- **Verify `e` end-here cd handoff in the wild.** The v0.1 `Q` binding
-  was retired in favour of `e` together with a rewrite of the cd
-  handoff (see shell-wrapper section above); the rewrite needs more
-  shell/terminal coverage before v1 ships.
-- **Persisted settings.** The `.` overlay (theme · borders · bionic)
-  ships in this release, but choices reset on every launch. A
-  config-file backing for the same overlay — plus the keymap and
-  default-flag surfaces that will follow the same pattern — is the
-  remaining v1 piece.
-Smaller polish items are tracked in
-[GitHub issues](https://github.com/mondial7/mira/issues).
 
 ## Security
 
