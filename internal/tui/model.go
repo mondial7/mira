@@ -87,20 +87,31 @@ type Model struct {
 	// settingsMode is true while the settings overlay is open. While in
 	// this mode, regular navigation keys are intercepted by the settings
 	// handler instead of the file browser. settingsCursor tracks which
-	// settings row is currently focused.
-	settingsMode   bool
-	settingsCursor int
+	// settings row is currently focused. settingsSnapshot remembers the
+	// settings as they were when the overlay opened so closeSettings can
+	// skip persisting when nothing actually changed.
+	settingsMode     bool
+	settingsCursor   int
+	settingsSnapshot Settings
 }
 
 // New constructs a Model rooted at start. It returns an error only when
 // the initial directory cannot be read; subsequent navigation errors are
-// surfaced via the model's status line instead.
+// surfaced via the model's status line instead. Persisted overlay
+// choices are loaded best-effort — a missing or unreadable config file
+// silently falls back to DefaultSettings so the TUI always launches.
 func New(start string, opts listing.Options) (Model, error) {
 	abs, err := filepath.Abs(start)
 	if err != nil {
 		return Model{}, err
 	}
-	m := Model{cwd: abs, opts: opts, settings: DefaultSettings()}
+	settings := DefaultSettings()
+	if path, err := configPathFunc(); err == nil {
+		if loaded, err := LoadSettings(path); err == nil {
+			settings = loaded
+		}
+	}
+	m := Model{cwd: abs, opts: opts, settings: settings}
 	m.applyTheme()
 	if err := m.refresh(); err != nil {
 		return Model{}, err
@@ -439,15 +450,29 @@ func (m Model) handleSettingsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 // openSettings turns on the settings overlay, parking the focus on the
-// first row so the user always lands somewhere predictable.
+// first row so the user always lands somewhere predictable. The current
+// settings are snapshotted so closeSettings can detect a no-op session
+// and skip writing the config.
 func (m *Model) openSettings() {
 	m.settingsMode = true
 	m.settingsCursor = 0
+	m.settingsSnapshot = m.settings
 }
 
 // closeSettings dismisses the overlay, returning to the file browser.
+// If the user actually changed something while the overlay was open,
+// the new settings are persisted to disk best-effort; a write failure
+// is intentionally swallowed because there's no good place to surface
+// it without disrupting the user, and the in-memory state is correct
+// regardless.
 func (m *Model) closeSettings() {
 	m.settingsMode = false
+	if m.settings == m.settingsSnapshot {
+		return
+	}
+	if path, err := configPathFunc(); err == nil {
+		_ = SaveSettings(path, m.settings)
+	}
 }
 
 // adjustSetting cycles the value of the currently focused settings row

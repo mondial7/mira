@@ -138,9 +138,17 @@ three knobs that change the look without leaving the TUI:
 
 Inside the overlay, `↑`/`↓` (or `w`/`s`) moves between rows, `←`/`→`
 (or `a`/`d`) cycles the focused value, `Enter` cycles forward, and
-`Esc` or `.` closes the overlay. Settings live for the session; a
-persisted-config story will land alongside the rest of the v1
-customisation surface.
+`Esc` or `.` closes the overlay.
+
+Choices persist between launches in a JSON file at
+`os.UserConfigDir()/mira/config.json` — typically
+`~/Library/Application Support/mira/config.json` on macOS,
+`$XDG_CONFIG_HOME/mira/config.json` (or `~/.config/mira/config.json`)
+on Linux, and `%AppData%\mira\config.json` on Windows. The file is
+written only when you actually change a value; opening the overlay
+and dismissing it without touching anything does not create one.
+Delete the file to reset to defaults. Keymap and default-flag
+surfaces will land in the same file as v1 progresses.
 
 ### End here & cd: shell wrapper
 

@@ -20,8 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Settings overlay (`.`).** First-class settings screen with three
   knobs: colour theme (`slate` / `forest` / `ocean` / `rose`), border
   preset (`fine` / `thick` / `dotted`), and a bionic-reading on/off
-  toggle. Defaults match the v0.1 look. Settings are session-scoped;
-  a persisted-config story is the remaining v1 piece.
+  toggle. Defaults match the v0.1 look.
+- **Persisted overlay choices.** Theme, borders, and bionic survive
+  across launches via a JSON file at
+  `os.UserConfigDir()/mira/config.json` (atomic writes). Missing or
+  corrupt files silently fall back to defaults so the TUI always
+  launches. The file is written only when a value actually changes,
+  so peeking at the overlay never leaves anything on disk. Keymap
+  and default-flag surfaces will follow the same pattern.
 - **Homebrew tap (`brew install mondial7/tap/mira`).** Goreleaser now
   publishes a formula to `mondial7/homebrew-tap` on every release.
   The brew step is gated on a `HOMEBREW_TAP_TOKEN` repo secret and
@@ -30,7 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Planned for v1.0
 
-- Persisted settings (the `.` overlay survives across launches).
+- Customisable keymap, persisted alongside the overlay choices.
+- Default-flag surface so `-a` / `-d` / `--no-ignore` can have
+  per-user defaults written into the same config file.
 
 ## [0.1.0] - 2026-05-10
 
