@@ -137,7 +137,9 @@ func TestView_RendersAllSections(t *testing.T) {
 	if out == "" {
 		t.Fatal("View() returned empty string")
 	}
-	for _, want := range []string{filepath.Base(root), "src", "go.mod", "items", "quit"} {
+	// scaffoldForView creates 1 dir + 1 file → "1 folder" + "1 file" in
+	// the header summary; "quit" is the always-present footer hint.
+	for _, want := range []string{filepath.Base(root), "src", "go.mod", "1 folder", "1 file", "quit"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("View() missing %q\n%s", want, out)
 		}

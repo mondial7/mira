@@ -134,8 +134,7 @@ func (m Model) renderFooter() string {
 	if m.err != nil {
 		return errorStyle.Render("error: "+m.err.Error()) + "\n" + helpStyle.Render(help)
 	}
-	count := fmt.Sprintf("%d items", len(m.entries))
-	return helpStyle.Render(count + " · " + help)
+	return helpStyle.Render(help)
 }
 
 // renderGrid lays out the rows currently inside the scroll viewport,
