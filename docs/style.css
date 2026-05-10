@@ -1,18 +1,22 @@
 :root {
-  --bg: #0e0f12;
-  --bg-soft: #15171c;
-  --bg-window: #1b1d23;
-  --bg-titlebar: #14161b;
-  --fg: #e8e9ee;
-  --fg-muted: #8a8f9c;
-  --accent: #b88cff;
-  --accent-soft: #6f5cb0;
-  --folder: #6cb4ff;
-  --file: #d8d9df;
-  --border: #2a2d35;
+  /* Rose theme (matches the TUI's "rose" preset) on a true-black canvas. */
+  --bg: #000000;
+  --bg-soft: #0a0a0d;
+  --bg-window: #0c0c11;
+  --bg-titlebar: #06070a;
+  --fg: #f5e6e9;
+  --fg-muted: #6c6c6c;
+  --accent: #ff87af;        /* rose 211 — selection / accent */
+  --accent-soft: #c75a85;
+  --rose-name: #ffd7d7;     /* rose 224 — entry name */
+  --rose-dim: #585858;      /* rose 240 — borders, hidden */
+  --rose-critter: #ffafaf;  /* rose 217 — bottom-right critters */
+  --rose-path-bg: #87005f;  /* rose 89 — path bar background */
+  --rose-path-fg: #ffffff;
+  --border: #221820;
   --good: #6fc678;
   --warn: #f0c674;
-  --bad: #e06c75;
+  --bad: #ff5f5f;
   --mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
   --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
 }
@@ -60,7 +64,7 @@ a:hover, a:focus {
 
 .hero {
   padding: 4rem 0 2rem;
-  background: radial-gradient(ellipse at top, rgba(184, 140, 255, 0.08), transparent 60%);
+  background: radial-gradient(ellipse at top, rgba(255, 135, 175, 0.1), transparent 60%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -109,12 +113,12 @@ a:hover, a:focus {
 }
 .btn.primary {
   background: var(--accent);
-  color: #0e0f12;
+  color: #1a0008;
   border-color: var(--accent);
 }
 .btn.primary:hover, .btn.primary:focus {
-  background: #cca8ff;
-  border-color: #cca8ff;
+  background: #ffa9c4;
+  border-color: #ffa9c4;
 }
 
 .demo-block {
@@ -162,13 +166,19 @@ a:hover, a:focus {
   overflow-x: auto;
 }
 
-.path { color: #ffffff; background: #2a2d35; padding: 0 0.4rem; border-radius: 3px; }
-.muted { color: var(--fg-muted); }
+.path {
+  color: var(--rose-path-fg);
+  background: var(--rose-path-bg);
+  padding: 0 0.4rem;
+  border-radius: 3px;
+  font-weight: 700;
+}
+.muted { color: var(--rose-dim); }
 .sel { color: var(--accent); font-weight: 700; }
-.folder { color: var(--folder); }
-.file { color: var(--file); }
-.critter { color: #c5a880; }
-.cell { white-space: pre; }
+/* Folder + file share the rose name color — in the actual rose theme the
+   distinction is in the border-glyph set, not the text colour. */
+.folder, .file { color: var(--rose-name); }
+.critter { color: var(--rose-critter); }
 
 h2 {
   margin: 3rem 0 1rem;
