@@ -223,6 +223,31 @@ func TestList_SymlinkDetection(t *testing.T) {
 	}
 }
 
+func TestList_PopulatesChildCountForDirs(t *testing.T) {
+	root := scaffold(t)
+	entries, err := List(root, Options{UseGitignore: true})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	for _, e := range entries {
+		switch {
+		case e.Name == "src":
+			// src/ contains a.go and b.go
+			if e.ChildCount != 2 {
+				t.Errorf("src ChildCount = %d, want 2", e.ChildCount)
+			}
+		case e.IsDir:
+			if e.ChildCount < 0 {
+				t.Errorf("dir %q ChildCount = %d, want non-negative", e.Name, e.ChildCount)
+			}
+		default:
+			if e.ChildCount != -1 {
+				t.Errorf("file %q should have ChildCount = -1, got %d", e.Name, e.ChildCount)
+			}
+		}
+	}
+}
+
 func TestList_NonexistentReturnsError(t *testing.T) {
 	_, err := List("/this/should/not/exist/banana-four", Options{})
 	if err == nil {

@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/lipgloss"
+
 	"github.com/marcomondini/banana-four/internal/listing"
 )
 
@@ -30,13 +32,30 @@ func TestTruncate(t *testing.T) {
 	}
 }
 
-func TestCenterInCell_PadsToWidth(t *testing.T) {
-	got := centerInCell("ab", 6)
-	if len(got) < 6 {
-		t.Errorf("expected width 6, got %q (len %d)", got, len(got))
+func TestPadToWidth_PadsToExactWidth(t *testing.T) {
+	got := padToWidth("ab", 6, nameStyle)
+	if w := lipgloss.Width(got); w != 6 {
+		t.Errorf("display width = %d, want 6 (%q)", w, got)
 	}
 	if !strings.Contains(got, "ab") {
-		t.Errorf("expected content preserved, got %q", got)
+		t.Errorf("content lost, got %q", got)
+	}
+}
+
+func TestChildCountLabel(t *testing.T) {
+	cases := []struct {
+		n    int
+		want string
+	}{
+		{-1, "—"},
+		{0, "empty"},
+		{1, "1 item"},
+		{42, "42 items"},
+	}
+	for _, tc := range cases {
+		if got := childCountLabel(tc.n); got != tc.want {
+			t.Errorf("childCountLabel(%d) = %q, want %q", tc.n, got, tc.want)
+		}
 	}
 }
 

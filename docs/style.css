@@ -167,6 +167,7 @@ a:hover, a:focus {
 .sel { color: var(--accent); font-weight: 700; }
 .folder { color: var(--folder); }
 .file { color: var(--file); }
+.critter { color: #c5a880; }
 .cell { white-space: pre; }
 
 h2 {

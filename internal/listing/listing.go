@@ -19,6 +19,11 @@ type Entry struct {
 	Mode      os.FileMode
 	Size      int64
 	Target    string // resolved symlink target, empty for non-symlinks
+	// ChildCount is the raw number of entries in this directory (or -1 if
+	// not applicable / not readable). It includes dotfiles and ignored
+	// entries on purpose: it's a quick "how full is this?" hint, not a
+	// preview of what entering would show.
+	ChildCount int
 }
 
 // Options controls how a directory is listed.
@@ -72,16 +77,22 @@ func List(dir string, opts Options) ([]Entry, error) {
 		}
 
 		entry := Entry{
-			Name:      name,
-			Path:      path,
-			IsDir:     info.IsDir(),
-			IsSymlink: info.Mode()&os.ModeSymlink != 0,
-			Mode:      info.Mode(),
-			Size:      info.Size(),
+			Name:       name,
+			Path:       path,
+			IsDir:      info.IsDir(),
+			IsSymlink:  info.Mode()&os.ModeSymlink != 0,
+			Mode:       info.Mode(),
+			Size:       info.Size(),
+			ChildCount: -1,
 		}
 		if entry.IsSymlink {
 			if t, err := os.Readlink(path); err == nil {
 				entry.Target = t
+			}
+		}
+		if entry.IsDir {
+			if children, err := os.ReadDir(path); err == nil {
+				entry.ChildCount = len(children)
 			}
 		}
 		out = append(out, entry)

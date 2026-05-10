@@ -9,23 +9,46 @@ import (
 	"github.com/marcomondini/banana-four/internal/listing"
 )
 
-// View renders the current model state to a string for bubbletea to draw.
+// View renders the current model state. The structure is:
+//
+//	▸ /current/path                          ← path bar (1 line)
+//	                                         ← blank
+//	┌── grid of cards, CellHeight tall ──┐
+//	│  with rowGap blank line between    │
+//	└────────────────────────────────────┘
+//	                                         ← blank gap to footer
+//	(critter strip — CritterHeight lines, right-aligned)
+//	                                         ← blank
+//	N items · ↑↓←→ ... q quit                ← help line
 func (m Model) View() string {
 	var b strings.Builder
 	b.WriteString(m.renderHeader())
 	b.WriteString("\n\n")
 	b.WriteString(m.renderGrid())
-	b.WriteString("\n")
+	b.WriteString("\n\n")
+	b.WriteString(renderCritters(m.viewWidth(), m.animFrame, m.cursorLookDir()))
+	b.WriteString("\n\n")
 	b.WriteString(m.renderFooter())
 	return b.String()
 }
 
+// viewWidth returns at least 1 column so layout math always succeeds.
+func (m Model) viewWidth() int {
+	if m.width < 1 {
+		return 1
+	}
+	return m.width
+}
+
 func (m Model) renderHeader() string {
 	path := m.cwd
-	// Truncate long paths from the left so the leaf directory stays visible.
-	maxPath := m.width - 4
+	maxPath := m.viewWidth() - 4
 	if maxPath > 0 && lipgloss.Width(path) > maxPath {
-		path = "…" + path[lipgloss.Width(path)-maxPath+1:]
+		// Truncate from the left so the leaf directory stays visible.
+		runes := []rune(path)
+		if len(runes) > maxPath-1 {
+			path = "…" + string(runes[len(runes)-(maxPath-1):])
+		}
 	}
 	return pathStyle.Render("▸ " + path)
 }
@@ -39,9 +62,8 @@ func (m Model) renderFooter() string {
 	return helpStyle.Render(count + " · " + help)
 }
 
-// renderGrid lays out the icon+label cells row by row. Icons are 3 lines
-// tall, labels live on the 4th line; rows pack as tightly as the terminal
-// width allows.
+// renderGrid lays out cards row by row, separating rows with a blank line
+// for breathing room.
 func (m Model) renderGrid() string {
 	cols := m.cols()
 	n := m.totalItems()
@@ -57,111 +79,163 @@ func (m Model) renderGrid() string {
 		}
 		rows = append(rows, m.renderRow(start, end))
 	}
-	return strings.Join(rows, "\n")
+	gap := "\n" + strings.Repeat("\n", rowGap) // newline ending each row + rowGap blanks
+	return strings.Join(rows, gap)
 }
 
-// renderRow joins the icon-line + label-line stack for a horizontal slice
-// of cells.
+// renderRow renders one horizontal slice of cards by interleaving each
+// card's lines, with a colGap-sized blank gutter between cards.
 func (m Model) renderRow(start, end int) string {
-	var (
-		line0, line1, line2 strings.Builder
-		labels              strings.Builder
-	)
+	cards := make([][]string, end-start)
 	for i := start; i < end; i++ {
-		art := iconFor(m, i)
-		artLines := strings.Split(art, "\n")
-		line0.WriteString(centerInCell(artLines[0], CellWidth))
-		line1.WriteString(centerInCell(artLines[1], CellWidth))
-		line2.WriteString(centerInCell(artLines[2], CellWidth))
-		labels.WriteString(centerInCell(labelFor(m, i), CellWidth))
+		cards[i-start] = renderCard(m, i)
 	}
-	return strings.Join([]string{
-		line0.String(),
-		line1.String(),
-		line2.String(),
-		labels.String(),
-	}, "\n")
+	gutter := strings.Repeat(" ", colGap)
+	var b strings.Builder
+	for line := 0; line < CellHeight; line++ {
+		for ci, card := range cards {
+			if ci > 0 {
+				b.WriteString(gutter)
+			}
+			b.WriteString(card[line])
+		}
+		if line < CellHeight-1 {
+			b.WriteByte('\n')
+		}
+	}
+	return b.String()
 }
 
-// iconFor renders the colorized ASCII art for the entry at index i.
-func iconFor(m Model, i int) string {
+// renderCard returns CellHeight lines of the card at index i. Each line is
+// already padded to exactly CellWidth display columns so renderRow can
+// concatenate horizontally without extra alignment.
+func renderCard(m Model, i int) []string {
 	selected := i == m.cursor
-	var art string
-	var color lipgloss.Color
+	sym, name, stats, kind := cardContent(m, i)
 
-	switch {
-	case m.isParent(i):
-		art = pickArt(parentArt, parentArtSelected, selected)
-		color = colorAccent
-	default:
-		e := m.entryAt(i)
-		switch {
-		case e.IsSymlink:
-			art = pickArt(linkArt, linkArtSelected, selected)
-			color = colorLink
-		case e.IsDir:
-			art = pickArt(folderArt, folderArtSelected, selected)
-			color = colorFolder
-		default:
-			art = pickArt(fileArt, fileArtSelected, selected)
-			color = colorFile
+	tl, tr, bl, br, h, v, bs, ns, ss := cardChrome(selected, kind)
+	innerWidth := CellWidth - 2
+
+	// Plain-text content; bs/ns/ss apply colour.
+	header := fmt.Sprintf(" %s  %s", sym, name)
+	statsLine := fmt.Sprintf("   %s", stats)
+
+	lines := make([]string, CellHeight)
+	lines[lineTop] = bs.Render(tl + strings.Repeat(h, innerWidth) + tr)
+	lines[lineName] = bs.Render(v) + padToWidth(header, innerWidth, ns) + bs.Render(v)
+	lines[lineSep] = bs.Render(v) + strings.Repeat(" ", innerWidth) + bs.Render(v)
+	lines[lineStats] = bs.Render(v) + padToWidth(statsLine, innerWidth, ss) + bs.Render(v)
+	lines[lineSpacer] = bs.Render(v) + strings.Repeat(" ", innerWidth) + bs.Render(v)
+	lines[lineBottom] = bs.Render(bl + strings.Repeat(h, innerWidth) + br)
+	return lines
+}
+
+// cardContent assembles the human-readable pieces shown inside the card:
+// selection symbol, display name, single-line stats, and the entry kind
+// used to pick border style.
+func cardContent(m Model, i int) (sym, name, stats string, kind cardKind) {
+	maxNameWidth := CellWidth - 6 // 2 borders + 1 leading space + 1 sym + 2 spaces
+
+	if m.isParent(i) {
+		sym = symParent
+		if i == m.cursor {
+			sym = symParentSelected
 		}
+		return sym, "..", "go up", kindParent
 	}
 
-	if selected {
-		color = colorAccent
-	}
-	return lipgloss.NewStyle().Foreground(color).Render(art)
-}
-
-func pickArt(unselected, selected string, isSelected bool) string {
-	if isSelected {
-		return selected
-	}
-	return unselected
-}
-
-// labelFor returns the colorized name shown beneath an icon, truncated to
-// the cell width.
-func labelFor(m Model, i int) string {
-	var name string
-	var style lipgloss.Style
-
+	e := m.entryAt(i)
+	selected := i == m.cursor
 	switch {
-	case m.isParent(i):
-		name = ".."
-		style = labelStyle
-	default:
-		e := m.entryAt(i)
-		name = e.Name
-		switch {
-		case e.IsDir:
-			style = labelDirStyle
-		case e.IsSymlink:
-			style = labelLinkStyle
-		default:
-			style = labelStyle
+	case e.IsSymlink:
+		sym = symLink
+		if selected {
+			sym = symLinkSelected
 		}
+		kind = kindLink
+		stats = "→ " + truncate(e.Target, CellWidth-7)
+	case e.IsDir:
+		sym = symFolder
+		if selected {
+			sym = symFolderSelected
+		}
+		kind = kindDir
+		stats = childCountLabel(e.ChildCount)
+	default:
+		sym = symFile
+		if selected {
+			sym = symFileSelected
+		}
+		kind = kindFile
+		stats = listing.HumanSize(e.Size)
 	}
-
-	if i == m.cursor {
-		style = labelSelectedStyle
-	}
-
-	name = truncate(name, CellWidth-2)
-	return style.Render(name)
+	name = truncate(e.Name, maxNameWidth)
+	return
 }
 
-// centerInCell pads s with spaces so it occupies exactly width display
-// columns. lipgloss.Width handles ANSI escape sequences correctly.
-func centerInCell(s string, width int) string {
-	w := lipgloss.Width(s)
+type cardKind int
+
+const (
+	kindParent cardKind = iota
+	kindDir
+	kindFile
+	kindLink
+)
+
+// cardChrome returns the border glyphs + lipgloss styles for a card based
+// on whether it's selected and what kind of entry it represents.
+func cardChrome(selected bool, kind cardKind) (
+	tl, tr, bl, br, h, v string,
+	border, name, stats lipgloss.Style,
+) {
+	switch {
+	case selected:
+		tl, tr, bl, br = heavyTL, heavyTR, heavyBL, heavyBR
+		h, v = heavyH, heavyV
+		border = selectedStyle
+		name = nameSelectedStyle
+		stats = statsSelectedStyle
+	case kind == kindFile:
+		tl, tr, bl, br = dashedTL, dashedTR, dashedBL, dashedBR
+		h, v = dashedH, dashedV
+		border = borderStyle
+		name = nameStyle
+		stats = statsStyle
+	default:
+		tl, tr, bl, br = borderTL, borderTR, borderBL, borderBR
+		h, v = borderH, borderV
+		border = borderStyle
+		name = nameStyle
+		stats = statsStyle
+	}
+	return
+}
+
+// padToWidth applies the given style to s, then right-pads with spaces so
+// the rendered display width is exactly width columns. lipgloss.Width
+// understands ANSI escape sequences so the math stays correct.
+func padToWidth(s string, width int, style lipgloss.Style) string {
+	rendered := style.Render(s)
+	w := lipgloss.Width(rendered)
 	if w >= width {
-		return s
+		return rendered
 	}
-	left := (width - w) / 2
-	right := width - w - left
-	return strings.Repeat(" ", left) + s + strings.Repeat(" ", right)
+	return rendered + strings.Repeat(" ", width-w)
+}
+
+// childCountLabel renders the dir-stats summary with singular/plural and a
+// graceful fallback when the count is unknown.
+func childCountLabel(n int) string {
+	switch {
+	case n < 0:
+		return "—"
+	case n == 0:
+		return "empty"
+	case n == 1:
+		return "1 item"
+	default:
+		return fmt.Sprintf("%d items", n)
+	}
 }
 
 func truncate(s string, max int) string {
@@ -179,7 +253,6 @@ func truncate(s string, max int) string {
 }
 
 // FlatList renders entries as a plain, unstyled list — used for piped output.
-// Kept here so the formatting policy lives next to the interactive renderer.
 func FlatList(entries []listing.Entry) string {
 	var b strings.Builder
 	for _, e := range entries {

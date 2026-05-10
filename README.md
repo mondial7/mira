@@ -5,12 +5,18 @@ file browser with ASCII-art icons, mouse clicks, keyboard navigation, and
 `.gitignore`-aware listing.
 
 ```
-▸ /Users/you/code/banana-four
+ ▸ /Users/you/code/banana-four
 
-  ╭───╮     ┏━━━┓     ╭───╮     ╭───╮     ╭┄┄┄╮     ╭┄┄┄╮
-  │ ↑ │     ┃ ▸ ┃     │ ▸ │     │ ▸ │     ┊ · ┊     ┊ · ┊
-  ╰───╯     ┗━━━┛     ╰───╯     ╰───╯     ╰┄┄┄╯     ╰┄┄┄╯
-   ..        docs    internal     src      go.mod    main.go
+╭──────────────────╮  ┏━━━━━━━━━━━━━━━━━━┓  ╭──────────────────╮  ╭┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈╮
+│ ↑  ..            │  ┃ ▶  docs          ┃  │ ▸  internal      │  ┊ ·  README.md     ┊
+│                  │  ┃                  ┃  │                  │  ┊                  ┊
+│   go up          │  ┃   3 items        ┃  │   2 items        │  ┊   4.3KB          ┊
+│                  │  ┃                  ┃  │                  │  ┊                  ┊
+╰──────────────────╯  ┗━━━━━━━━━━━━━━━━━━┛  ╰──────────────────╯  ╰┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈╯
+
+                                                 /\_/\     /^.^\
+                                                ( o.o )   ( o.o )
+                                                 > ^ <     v=-=v
 
 5 items · ↑↓←→ / hjkl move · ⏎ open · ⌫ up · click to enter · q quit
 ```

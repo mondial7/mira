@@ -55,7 +55,8 @@ func TestModel_ColsClampsToOne(t *testing.T) {
 }
 
 func TestModel_ColsScalesWithWidth(t *testing.T) {
-	m := Model{width: CellWidth * 3}
+	// columnStride = CellWidth + colGap; need at least 3*stride - colGap to fit 3 cards
+	m := Model{width: columnStride*3 - colGap}
 	if got := m.cols(); got != 3 {
 		t.Errorf("cols = %d, want 3", got)
 	}
@@ -67,22 +68,26 @@ func TestModel_CellAtMapsClicksToIndex(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	m.width = CellWidth * 3 // 3 columns
+	m.width = columnStride*3 - colGap // 3 columns
 
 	// First cell of first row → ".." (index 0).
 	if got := m.cellAt(1, headerLines); got != 0 {
 		t.Errorf("first cell click = %d, want 0", got)
 	}
-	// Second cell of first row → index 1.
-	if got := m.cellAt(CellWidth+1, headerLines); got != 1 {
+	// Second cell of first row starts at columnStride.
+	if got := m.cellAt(columnStride+1, headerLines); got != 1 {
 		t.Errorf("second cell click = %d, want 1", got)
+	}
+	// A click in the gutter between cards is rejected.
+	if got := m.cellAt(CellWidth, headerLines); got != -1 {
+		t.Errorf("gutter click = %d, want -1", got)
 	}
 	// Click in the header row (above grid).
 	if got := m.cellAt(0, 0); got != -1 {
 		t.Errorf("header click = %d, want -1", got)
 	}
 	// Click way past last item.
-	if got := m.cellAt(0, headerLines+CellHeight*99); got != -1 {
+	if got := m.cellAt(0, headerLines+(CellHeight+rowGap)*99); got != -1 {
 		t.Errorf("out-of-range click = %d, want -1", got)
 	}
 }
@@ -148,6 +153,45 @@ func TestModel_BackspaceGoesUp(t *testing.T) {
 
 	if m.cwd != root {
 		t.Errorf("cwd after backspace = %q, want %q", m.cwd, root)
+	}
+}
+
+func TestModel_CursorLookDirTracksPosition(t *testing.T) {
+	root := scaffoldDir(t)
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	// Force a 3-column layout so the thirds carve cleanly.
+	m.width = columnStride*3 - colGap
+
+	cases := []struct {
+		cursor int
+		want   int
+	}{
+		{0, -1}, // leftmost column
+		{1, 0},  // middle
+		{2, 1},  // rightmost
+		{3, -1}, // wraps to next row, leftmost
+	}
+	for _, tc := range cases {
+		m.cursor = tc.cursor
+		if got := m.cursorLookDir(); got != tc.want {
+			t.Errorf("cursor=%d → lookDir=%d, want %d", tc.cursor, got, tc.want)
+		}
+	}
+}
+
+func TestModel_AnimFrameAdvancesOnTick(t *testing.T) {
+	root := scaffoldDir(t)
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	startFrame := m.animFrame
+	next, _ := m.Update(tickMsg{})
+	if next.(Model).animFrame != startFrame+1 {
+		t.Errorf("animFrame = %d, want %d", next.(Model).animFrame, startFrame+1)
 	}
 }
 

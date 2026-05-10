@@ -2,23 +2,34 @@ package tui
 
 import (
 	"path/filepath"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/marcomondini/banana-four/internal/listing"
 )
 
-// headerLines and footerLines are subtracted from terminal height when
-// computing how many grid rows fit. They also tell the click handler how
-// many lines to skip when mapping y → row.
+// headerLines and footerLines define how many lines the top path bar and
+// the bottom critter+help block consume. They're used both for layout
+// (computing how many grid rows fit) and for click → cell mapping.
 const (
 	headerLines = 2 // path bar + blank line
-	footerLines = 2 // blank line + help bar
+	// Footer = 1 blank gap + CritterHeight + 1 blank + 1 help line.
+	// Defined as a const expression for clarity.
+	footerLines = 1 + CritterHeight + 1 + 1
 )
 
+// tickInterval drives the ambient blink/wag loop. Critters always face
+// the column the cursor is in, so we don't need a separate "decay" timer
+// for snapping-back-to-centre behaviour.
+const tickInterval = 600 * time.Millisecond
+
+// tickMsg is the bubbletea message dispatched on each animation tick.
+type tickMsg time.Time
+
 // Model is the bubbletea state for the file browser. It owns the current
-// directory, the cached listing, the cursor index and the rendered terminal
-// dimensions. The cursor index 0 is reserved for the synthetic ".." entry.
+// directory, the cached listing, the cursor index, the rendered terminal
+// dimensions, and the animation state for the bottom-right critters.
 type Model struct {
 	cwd     string
 	entries []listing.Entry
@@ -29,11 +40,16 @@ type Model struct {
 
 	opts listing.Options
 	err  error
+
+	// animFrame is a monotonic tick counter; modular cycling done in
+	// pickFrames. The critters' look-direction is derived from the cursor
+	// position itself, so it's not stored here.
+	animFrame int
 }
 
-// New constructs a Model rooted at start. It returns an error only when the
-// initial directory cannot be read; subsequent navigation errors are surfaced
-// via the model's status line instead.
+// New constructs a Model rooted at start. It returns an error only when
+// the initial directory cannot be read; subsequent navigation errors are
+// surfaced via the model's status line instead.
 func New(start string, opts listing.Options) (Model, error) {
 	abs, err := filepath.Abs(start)
 	if err != nil {
@@ -66,25 +82,40 @@ func (m Model) isParent(i int) bool { return i == 0 }
 
 func (m Model) entryAt(i int) listing.Entry { return m.entries[i-1] }
 
+// columnStride is the per-column horizontal advance: card width plus the
+// horizontal gap between cards.
+const columnStride = CellWidth + colGap
+
 // cols returns the number of cells per row for the current width, never
 // less than 1 so the layout stays valid in narrow terminals.
 func (m Model) cols() int {
 	if m.width < CellWidth {
 		return 1
 	}
-	return m.width / CellWidth
+	// Add colGap before dividing so we count the trailing card whose gap
+	// would otherwise overflow the available width.
+	return (m.width + colGap) / columnStride
 }
 
 // cellAt maps a terminal click to a cell index. y is in absolute terminal
-// coordinates; this function applies the header offset itself.
+// coordinates; this function applies the header offset and accounts for
+// blank gaps between rows and columns.
 func (m Model) cellAt(x, y int) int {
 	gridY := y - headerLines
 	if gridY < 0 {
 		return -1
 	}
 	cols := m.cols()
-	col := x / CellWidth
-	row := gridY / CellHeight
+	col := x / columnStride
+	// Reject clicks landing in the inter-card horizontal gap.
+	if x%columnStride >= CellWidth {
+		return -1
+	}
+	rowStride := CellHeight + rowGap
+	row := gridY / rowStride
+	if gridY%rowStride >= CellHeight {
+		return -1
+	}
 	if col < 0 || col >= cols {
 		return -1
 	}
@@ -95,17 +126,47 @@ func (m Model) cellAt(x, y int) int {
 	return i
 }
 
-// Init satisfies tea.Model; nothing to bootstrap.
-func (Model) Init() tea.Cmd { return nil }
+// cursorLookDir returns -1, 0, or 1 based on which third of the row the
+// cursor is currently in. The critters use this to track the user's
+// selection without needing any extra state machine.
+func (m Model) cursorLookDir() int {
+	cols := m.cols()
+	if cols <= 1 || m.totalItems() == 0 {
+		return 0
+	}
+	col := m.cursor % cols
+	third := cols / 3
+	if third < 1 {
+		third = 1
+	}
+	switch {
+	case col < third:
+		return -1
+	case col >= cols-third:
+		return 1
+	default:
+		return 0
+	}
+}
 
-// Update is the bubbletea event handler. It returns the new model and
-// optionally a command (e.g. tea.Quit).
+// Init starts the animation tick loop.
+func (Model) Init() tea.Cmd { return tickCmd() }
+
+func tickCmd() tea.Cmd {
+	return tea.Tick(tickInterval, func(t time.Time) tea.Msg { return tickMsg(t) })
+}
+
+// Update is the bubbletea event handler.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
 		return m, nil
+
+	case tickMsg:
+		m.animFrame++
+		return m, tickCmd()
 
 	case tea.KeyMsg:
 		return m.handleKey(msg)
