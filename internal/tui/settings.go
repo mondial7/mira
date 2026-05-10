@@ -6,11 +6,13 @@ import "github.com/charmbracelet/lipgloss"
 // other three are mood variants.
 type ColorTheme int
 
+// Available palettes. Slate is the v0.1 default — neutral grays with an
+// amber accent. Forest leans green, ocean blue, rose pink.
 const (
-	ThemeSlate  ColorTheme = iota // default — neutral grays + amber accent
-	ThemeForest                   // greens + lime accent
-	ThemeOcean                    // blues + cyan accent
-	ThemeRose                     // warm pinks + rose accent
+	ThemeSlate ColorTheme = iota
+	ThemeForest
+	ThemeOcean
+	ThemeRose
 )
 
 // allThemes is the cycle order used by the settings view. Keep Slate first
@@ -35,14 +37,19 @@ func (t ColorTheme) Label() string {
 // BorderPreset chooses the glyph set used for card borders.
 type BorderPreset int
 
+// Available border presets. Fine is the v0.1 default (rounded for dirs,
+// double-line for files, heavy for the selected card). Thick paints
+// every card with heavy borders. Dotted uses rounded corners with
+// dotted edges across the board.
 const (
-	BorderFine   BorderPreset = iota // default — rounded for dirs, double-line for files, heavy for selected
-	BorderThick                      // heavy single-line for every card; selection signalled by colour
-	BorderDotted                     // rounded corners with dotted edges
+	BorderFine BorderPreset = iota
+	BorderThick
+	BorderDotted
 )
 
 var allBorders = []BorderPreset{BorderFine, BorderThick, BorderDotted}
 
+// Label returns the human-readable name shown in the settings view.
 func (b BorderPreset) Label() string {
 	switch b {
 	case BorderThick:

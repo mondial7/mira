@@ -39,27 +39,6 @@ const (
 )
 
 // defaultStyles is the slate-theme style bundle used when a Model has no
-// settings of its own (zero-value Model in tests, etc.) and as the source
-// for the package-level style aliases below.
+// settings of its own (zero-value Model fallback in activeStyles) and as
+// the test fixture for ad-hoc style probes.
 var defaultStyles = paletteFor(ThemeSlate).styles()
-
-// Package-level aliases preserved for tests and ad-hoc callers. Active
-// rendering goes through Model.styles so theme changes take effect at
-// runtime.
-var (
-	pathStyle            = defaultStyles.path
-	borderStyle          = defaultStyles.border
-	selectedStyle        = defaultStyles.selected
-	nameStyle            = defaultStyles.name
-	nameSelectedStyle    = defaultStyles.nameSelected
-	statsStyle           = defaultStyles.stats
-	statsSelectedStyle   = defaultStyles.statsSelected
-	nameHiddenStyle      = defaultStyles.nameHidden
-	statsHiddenStyle     = defaultStyles.statsHidden
-	critterStyle         = defaultStyles.critter
-	helpStyle            = defaultStyles.help
-	errorStyle           = defaultStyles.errorText
-	scrollIndicatorStyle = defaultStyles.scrollIndicator
-	searchQueryStyle     = defaultStyles.searchQuery
-	searchCursorStyle    = defaultStyles.searchCursor
-)

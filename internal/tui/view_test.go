@@ -34,7 +34,7 @@ func TestClampDisplay(t *testing.T) {
 }
 
 func TestPadToWidth_PadsToExactWidth(t *testing.T) {
-	got := padToWidth("ab", 6, nameStyle)
+	got := padToWidth("ab", 6, defaultStyles.name)
 	if w := lipgloss.Width(got); w != 6 {
 		t.Errorf("display width = %d, want 6 (%q)", w, got)
 	}
