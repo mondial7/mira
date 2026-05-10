@@ -6,7 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/marcomondini/banana-four/internal/listing"
+	"github.com/mondial7/banana-four/internal/listing"
 )
 
 // headerLines and footerLines define how many lines the top path bar and

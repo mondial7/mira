@@ -13,7 +13,7 @@ By participating, you agree to abide by the
 Requirements: **Go 1.25+** and `git`. No other tooling is required.
 
 ```sh
-git clone https://github.com/marcomondini/banana-four
+git clone https://github.com/mondial7/banana-four
 cd banana-four
 go test ./...
 go run .

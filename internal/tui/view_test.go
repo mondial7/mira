@@ -8,7 +8,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/marcomondini/banana-four/internal/listing"
+	"github.com/mondial7/banana-four/internal/listing"
 )
 
 func TestTruncate(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/marcomondini/banana-four/internal/listing"
+	"github.com/mondial7/banana-four/internal/listing"
 )
 
 // TestPreview is a manual visualisation aid: run `go test ./internal/tui

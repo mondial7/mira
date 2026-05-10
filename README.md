@@ -40,14 +40,14 @@ file browser with ASCII-art icons, mouse clicks, keyboard navigation, and
 ### Pre-built binaries
 
 Download the binary for your platform from the
-[latest release](https://github.com/marcomondini/banana-four/releases/latest)
+[latest release](https://github.com/mondial7/banana-four/releases/latest)
 and put it on your `PATH`. Each release includes SHA-256 checksums and an
 SBOM.
 
 ### From source
 
 ```sh
-go install github.com/marcomondini/banana-four@latest
+go install github.com/mondial7/banana-four@latest
 ```
 
 ## Usage
@@ -111,7 +111,7 @@ Pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the
 full guide. The TL;DR:
 
 ```sh
-git clone https://github.com/marcomondini/banana-four
+git clone https://github.com/mondial7/banana-four
 cd banana-four
 go test ./...
 go run .

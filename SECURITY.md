@@ -31,7 +31,7 @@ security fixes at the maintainers' discretion.
 Please **do not** open a public GitHub issue for security problems.
 
 Use GitHub's
-[private vulnerability reporting](https://github.com/marcomondini/banana-four/security/advisories/new)
+[private vulnerability reporting](https://github.com/mondial7/banana-four/security/advisories/new)
 instead. Include:
 
 - A description of the issue.

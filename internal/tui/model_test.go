@@ -7,7 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/marcomondini/banana-four/internal/listing"
+	"github.com/mondial7/banana-four/internal/listing"
 )
 
 // scaffoldDir creates a tmp dir with two subdirs and two files so we can

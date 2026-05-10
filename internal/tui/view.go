@@ -6,7 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/marcomondini/banana-four/internal/listing"
+	"github.com/mondial7/banana-four/internal/listing"
 )
 
 // View renders the current model state. The structure is:

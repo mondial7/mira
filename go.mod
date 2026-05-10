@@ -1,4 +1,4 @@
-module github.com/marcomondini/banana-four
+module github.com/mondial7/banana-four
 
 go 1.25.8
 
