@@ -1,0 +1,17 @@
+# Build artifacts
+/banana-four
+/dist/
+
+# Test + coverage output
+*.test
+coverage.out
+coverage.html
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editor noise
+.idea/
+.vscode/
+*.swp

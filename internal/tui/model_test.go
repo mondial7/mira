@@ -1,0 +1,164 @@
+package tui
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/marcomondini/banana-four/internal/listing"
+)
+
+// scaffoldDir creates a tmp dir with two subdirs and two files so we can
+// drive Model logic deterministically.
+func scaffoldDir(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	for _, d := range []string{"alpha", "beta"} {
+		if err := os.MkdirAll(filepath.Join(root, d), 0o755); err != nil {
+			t.Fatalf("mkdir %s: %v", d, err)
+		}
+	}
+	for _, f := range []string{"one.txt", "two.txt"} {
+		if err := os.WriteFile(filepath.Join(root, f), nil, 0o644); err != nil {
+			t.Fatalf("write %s: %v", f, err)
+		}
+	}
+	return root
+}
+
+func TestNew_FailsOnUnreadableDir(t *testing.T) {
+	_, err := New("/this/path/should/not/exist/banana", listing.Options{})
+	if err == nil {
+		t.Fatal("expected error from New on missing directory")
+	}
+}
+
+func TestModel_TotalItemsIncludesParent(t *testing.T) {
+	root := scaffoldDir(t)
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	// 2 dirs + 2 files + 1 parent = 5
+	if got := m.totalItems(); got != 5 {
+		t.Errorf("totalItems = %d, want 5", got)
+	}
+}
+
+func TestModel_ColsClampsToOne(t *testing.T) {
+	m := Model{width: 4} // less than CellWidth
+	if got := m.cols(); got != 1 {
+		t.Errorf("cols = %d, want 1 for narrow width", got)
+	}
+}
+
+func TestModel_ColsScalesWithWidth(t *testing.T) {
+	m := Model{width: CellWidth * 3}
+	if got := m.cols(); got != 3 {
+		t.Errorf("cols = %d, want 3", got)
+	}
+}
+
+func TestModel_CellAtMapsClicksToIndex(t *testing.T) {
+	root := scaffoldDir(t)
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	m.width = CellWidth * 3 // 3 columns
+
+	// First cell of first row → ".." (index 0).
+	if got := m.cellAt(1, headerLines); got != 0 {
+		t.Errorf("first cell click = %d, want 0", got)
+	}
+	// Second cell of first row → index 1.
+	if got := m.cellAt(CellWidth+1, headerLines); got != 1 {
+		t.Errorf("second cell click = %d, want 1", got)
+	}
+	// Click in the header row (above grid).
+	if got := m.cellAt(0, 0); got != -1 {
+		t.Errorf("header click = %d, want -1", got)
+	}
+	// Click way past last item.
+	if got := m.cellAt(0, headerLines+CellHeight*99); got != -1 {
+		t.Errorf("out-of-range click = %d, want -1", got)
+	}
+}
+
+func TestModel_KeyboardNavigationStaysInBounds(t *testing.T) {
+	root := scaffoldDir(t)
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	m.width = CellWidth * 5
+
+	// Right past the end should clamp.
+	for i := 0; i < 100; i++ {
+		next, _ := m.Update(tea.KeyMsg{Type: tea.KeyRight})
+		m = next.(Model)
+	}
+	if m.cursor != m.totalItems()-1 {
+		t.Errorf("cursor = %d, want last index %d", m.cursor, m.totalItems()-1)
+	}
+
+	// Left past the start should clamp.
+	for i := 0; i < 100; i++ {
+		next, _ := m.Update(tea.KeyMsg{Type: tea.KeyLeft})
+		m = next.(Model)
+	}
+	if m.cursor != 0 {
+		t.Errorf("cursor = %d, want 0", m.cursor)
+	}
+}
+
+func TestModel_EnterDescendsIntoDirectory(t *testing.T) {
+	root := scaffoldDir(t)
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	m.width = CellWidth * 5
+
+	// First non-parent entry should be "alpha" (dirs sort before files).
+	m.cursor = 1
+	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = next.(Model)
+
+	if filepath.Base(m.cwd) != "alpha" {
+		t.Errorf("cwd = %q, want to end in alpha", m.cwd)
+	}
+	if m.cursor != 0 {
+		t.Errorf("cursor reset expected after navigation, got %d", m.cursor)
+	}
+}
+
+func TestModel_BackspaceGoesUp(t *testing.T) {
+	root := scaffoldDir(t)
+	m, err := New(filepath.Join(root, "alpha"), listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	m.width = CellWidth * 5
+
+	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+	m = next.(Model)
+
+	if m.cwd != root {
+		t.Errorf("cwd after backspace = %q, want %q", m.cwd, root)
+	}
+}
+
+func TestModel_QuitKey(t *testing.T) {
+	root := scaffoldDir(t)
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	if cmd == nil {
+		t.Fatal("expected tea.Quit cmd from 'q' key")
+	}
+}
