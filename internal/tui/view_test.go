@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 
 	"github.com/mondial7/banana-four/internal/listing"
 )
@@ -39,6 +40,53 @@ func TestPadToWidth_PadsToExactWidth(t *testing.T) {
 	}
 	if !strings.Contains(got, "ab") {
 		t.Errorf("content lost, got %q", got)
+	}
+}
+
+func TestStyleName_BionicBoldsLeadingHalfOfWords(t *testing.T) {
+	// Force ANSI emission so we can inspect the result.
+	prev := lipgloss.DefaultRenderer().ColorProfile()
+	t.Cleanup(func() { lipgloss.SetColorProfile(prev) })
+	lipgloss.SetColorProfile(termenv.ANSI256)
+
+	base := lipgloss.NewStyle().Foreground(lipgloss.Color("250"))
+	cases := []struct {
+		name      string
+		wantBold  []string // segments that should appear bolded
+		wantPlain []string // segments that should appear plain
+	}{
+		{name: "documents", wantBold: []string{"docu"}, wantPlain: []string{"ments"}},
+		{name: "src", wantBold: []string{"sr"}, wantPlain: []string{"c"}},
+		{name: "main.go", wantBold: []string{"ma", "g"}, wantPlain: []string{"in", "o"}},
+		{name: "node_modules", wantBold: []string{"no", "modu"}, wantPlain: []string{"de", "_", "les"}},
+	}
+	for _, tc := range cases {
+		got := styleName(tc.name, base, true)
+		for _, seg := range tc.wantBold {
+			marker := "\x1b[1;" // bold attribute, then color
+			if !strings.Contains(got, marker+"38;5;250m"+seg) {
+				t.Errorf("styleName(%q): expected %q to be bolded, got %q",
+					tc.name, seg, got)
+			}
+		}
+	}
+
+	// Bionic disabled passes through to a single styled run.
+	plain := styleName("documents", base, false)
+	if strings.Contains(plain, "\x1b[1;") {
+		t.Errorf("bionic=false should not emit bold, got %q", plain)
+	}
+}
+
+func TestStyleName_EmptyAndSingleChar(t *testing.T) {
+	base := lipgloss.NewStyle()
+	if got := styleName("", base, true); got != "" {
+		t.Errorf("empty name should render empty, got %q", got)
+	}
+	// Single char with bionic should still render (the whole 1-char word
+	// becomes bold, which is fine).
+	if got := styleName("x", base, true); got == "" {
+		t.Errorf("single-char name should not be empty")
 	}
 }
 

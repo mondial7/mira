@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 
 	"github.com/mondial7/banana-four/internal/listing"
 )
@@ -17,6 +19,9 @@ func TestPreview(t *testing.T) {
 	if os.Getenv("BF_PREVIEW") == "" {
 		t.Skip("set BF_PREVIEW=1 to render a preview")
 	}
+	// Force lipgloss to emit ANSI even though the test runner isn't a TTY,
+	// so the preview output has colors + bold for visual review.
+	lipgloss.SetColorProfile(termenv.ANSI256)
 	dir := os.Getenv("BF_PREVIEW_DIR")
 	if dir == "" {
 		dir = "."

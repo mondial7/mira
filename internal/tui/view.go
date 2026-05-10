@@ -182,8 +182,9 @@ func (m Model) renderRow(start, end int) string {
 // concatenate horizontally without extra alignment.
 func renderCard(m Model, i int) []string {
 	selected := i == m.cursor
+	parent := m.isParent(i)
 	sym, name, stats, kind := cardContent(m, i)
-	hidden := !m.isParent(i) && strings.HasPrefix(name, ".")
+	hidden := !parent && strings.HasPrefix(name, ".")
 
 	tl, tr, bl, br, h, v, bs, ns, ss := cardChrome(selected, kind, hidden)
 	cellW := m.cellWidth()
@@ -192,22 +193,102 @@ func renderCard(m Model, i int) []string {
 		innerWidth = 1
 	}
 
-	header := fmt.Sprintf(" %s  %s", sym, name)
-	statsLine := fmt.Sprintf("   %s", stats)
+	// Reserve " sym  " (4 cols) so the name fits beside the symbol.
+	maxNameDisplay := innerWidth - 4
+	if maxNameDisplay < 1 {
+		maxNameDisplay = 1
+	}
+	visibleName := clampPlain(name, maxNameDisplay)
 
-	// Safety net: if dynamic sizing wasn't enough (e.g. terminal is too
-	// narrow), trim from the right with an ellipsis so the box stays sealed.
-	header = clampDisplay(header, innerWidth)
-	statsLine = clampDisplay(statsLine, innerWidth)
+	// Bionic reading: bold the leading half of each word-segment so the
+	// eye can pattern-match faster. Skipped for the ".." entry and for
+	// the selected entry (its style is already fully bold-accent — bionic
+	// would have no contrast).
+	useBionic := !parent && !selected
+	styledName := styleName(visibleName, ns, useBionic)
+
+	nameLine := " " + ns.Render(sym) + "  " + styledName
+	statsLine := ss.Render("   " + clampPlain(stats, innerWidth-3))
+
+	nameLine = padDisplayWidth(nameLine, innerWidth)
+	statsLine = padDisplayWidth(statsLine, innerWidth)
 
 	lines := make([]string, CellHeight)
 	lines[lineTop] = bs.Render(tl + strings.Repeat(h, innerWidth) + tr)
-	lines[lineName] = bs.Render(v) + padToWidth(header, innerWidth, ns) + bs.Render(v)
+	lines[lineName] = bs.Render(v) + nameLine + bs.Render(v)
 	lines[lineSep] = bs.Render(v) + strings.Repeat(" ", innerWidth) + bs.Render(v)
-	lines[lineStats] = bs.Render(v) + padToWidth(statsLine, innerWidth, ss) + bs.Render(v)
+	lines[lineStats] = bs.Render(v) + statsLine + bs.Render(v)
 	lines[lineSpacer] = bs.Render(v) + strings.Repeat(" ", innerWidth) + bs.Render(v)
 	lines[lineBottom] = bs.Render(bl + strings.Repeat(h, innerWidth) + br)
 	return lines
+}
+
+// styleName renders name through base, optionally applying bionic-style
+// bolding: each word-segment (split on _ - . space /) gets its leading
+// half drawn with Bold added to the base style. Cap of 4 prevents very
+// long words from being almost entirely bold.
+func styleName(name string, base lipgloss.Style, bionic bool) string {
+	if !bionic || name == "" {
+		return base.Render(name)
+	}
+	bold := base.Bold(true)
+	var b strings.Builder
+	word := make([]rune, 0, 8)
+	flush := func() {
+		if len(word) == 0 {
+			return
+		}
+		n := (len(word) + 1) / 2
+		if n > 4 {
+			n = 4
+		}
+		b.WriteString(bold.Render(string(word[:n])))
+		if n < len(word) {
+			b.WriteString(base.Render(string(word[n:])))
+		}
+		word = word[:0]
+	}
+	for _, r := range name {
+		switch r {
+		case '_', '-', '.', ' ', '/':
+			flush()
+			b.WriteString(base.Render(string(r)))
+		default:
+			word = append(word, r)
+		}
+	}
+	flush()
+	return b.String()
+}
+
+// padDisplayWidth right-pads s with spaces so its display width is
+// exactly width columns. Unlike padToWidth it does not re-apply a style,
+// which would corrupt strings that already contain ANSI escapes.
+func padDisplayWidth(s string, width int) string {
+	w := lipgloss.Width(s)
+	if w >= width {
+		return s
+	}
+	return s + strings.Repeat(" ", width-w)
+}
+
+// clampPlain truncates a plain (un-styled) string to at most max display
+// columns, appending an ellipsis when it had to cut.
+func clampPlain(s string, max int) string {
+	if max <= 0 {
+		return ""
+	}
+	if lipgloss.Width(s) <= max {
+		return s
+	}
+	if max == 1 {
+		return "…"
+	}
+	r := []rune(s)
+	for len(r) > 0 && lipgloss.Width(string(r))+1 > max {
+		r = r[:len(r)-1]
+	}
+	return string(r) + "…"
 }
 
 // cardContent assembles the human-readable pieces shown inside the card:
