@@ -78,25 +78,27 @@ release:
     Download the appropriate archive for your platform, verify the SHA-256
     against `checksums.txt`, extract, and put `banana-four` on your `PATH`.
 
-    ```sh
-    brew install marcomondini/tap/banana-four
-    ```
+    See the README for installation options.
 
-# Homebrew tap publishing. Requires:
-#   1. A repo named `homebrew-tap` under the same owner.
-#   2. A `HOMEBREW_TAP_TOKEN` secret with repo:write access to that tap.
-# Comment out the entire `brews` block until both exist; otherwise the
-# release will fail at the formula-publish step.
-brews:
-  - name: banana-four
-    repository:
-      owner: marcomondini
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    homepage: https://github.com/marcomondini/banana-four
-    description: A pretty, interactive folder visualizer for the terminal.
-    license: MIT
-    test: |
-      system "#{bin}/banana-four", "--version"
-    install: |
-      bin.install "banana-four"
+# --- Optional: Homebrew tap publishing -------------------------------------
+# This block is commented out so the default release flow works for any fork
+# without extra setup. To enable it for your fork:
+#
+#   1. Create a public repo called `homebrew-tap` under your GitHub user/org.
+#   2. Add a `HOMEBREW_TAP_TOKEN` repo secret with repo:write on that tap.
+#   3. Set HOMEBREW_TAP_OWNER (e.g. via the release workflow `env:` block) to
+#      your GitHub username, then uncomment the block below.
+#
+# brews:
+#   - name: banana-four
+#     repository:
+#       owner: "{{ .Env.HOMEBREW_TAP_OWNER }}"
+#       name: homebrew-tap
+#       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+#     homepage: "https://github.com/{{ .Env.HOMEBREW_TAP_OWNER }}/banana-four"
+#     description: A pretty, interactive folder visualizer for the terminal.
+#     license: MIT
+#     test: |
+#       system "#{bin}/banana-four", "--version"
+#     install: |
+#       bin.install "banana-four"

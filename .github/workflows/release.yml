@@ -32,6 +32,7 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Set HOMEBREW_TAP_TOKEN in repo secrets to enable formula publishing.
-          # If unset, comment out the `brews` block in .goreleaser.yml.
-          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          # Optional Homebrew tap publishing — uncomment along with the
+          # `brews` block in .goreleaser.yml when a tap repo + secret exist.
+          # HOMEBREW_TAP_OWNER: ${{ github.repository_owner }}
+          # HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}

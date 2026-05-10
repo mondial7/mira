@@ -38,12 +38,6 @@ Download the binary for your platform from the
 and put it on your `PATH`. Each release includes SHA-256 checksums and an
 SBOM.
 
-### Homebrew
-
-```sh
-brew install marcomondini/tap/banana-four
-```
-
 ### From source
 
 ```sh

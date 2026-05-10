@@ -30,7 +30,9 @@ security fixes at the maintainers' discretion.
 
 Please **do not** open a public GitHub issue for security problems.
 
-Email **m.mondini@ubutler.nl** with:
+Use GitHub's
+[private vulnerability reporting](https://github.com/marcomondini/banana-four/security/advisories/new)
+instead. Include:
 
 - A description of the issue.
 - Steps to reproduce.
@@ -39,9 +41,6 @@ Email **m.mondini@ubutler.nl** with:
 
 You should receive an acknowledgement within 5 business days. We will work
 with you on a coordinated disclosure timeline (typically ≤ 90 days).
-
-If you prefer, you can use GitHub's
-[private vulnerability reporting](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing/privately-reporting-a-security-vulnerability).
 
 ## Build & supply chain
 
