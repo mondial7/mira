@@ -1,7 +1,11 @@
 // Package tui implements the interactive terminal UI for mira.
 package tui
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+)
 
 // Critters — a cat and a dog that live in the bottom-right corner of the
 // view. Their idle animation cycles slowly (a sleepy blink every few
@@ -101,7 +105,7 @@ func pickFrames(animFrame, lookDir int) (cat, dog [3]string) {
 // renderCritters builds the 3-line block that holds the critters, padded
 // with spaces on the left so the block right-aligns to `width` columns.
 // Returns three styled lines joined by newlines.
-func renderCritters(width, animFrame, lookDir int) string {
+func renderCritters(width, animFrame, lookDir int, style lipgloss.Style) string {
 	cat, dog := pickFrames(animFrame, lookDir)
 
 	const gap = "  " // two spaces between critters
@@ -114,7 +118,7 @@ func renderCritters(width, animFrame, lookDir int) string {
 
 	var lines [CritterHeight]string
 	for i := 0; i < CritterHeight; i++ {
-		row := critterStyle.Render(cat[i] + gap + dog[i])
+		row := style.Render(cat[i] + gap + dog[i])
 		lines[i] = pad + row
 	}
 	return strings.Join(lines[:], "\n")

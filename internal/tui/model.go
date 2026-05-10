@@ -76,6 +76,19 @@ type Model struct {
 	searchMode  bool
 	searchQuery string
 	fullEntries []listing.Entry
+
+	// User-tunable presentation knobs (theme, borders, bionic toggle).
+	// settings is the live state; styles is the lipgloss bundle derived
+	// from settings.Theme — re-built whenever the theme changes.
+	settings Settings
+	styles   themeStyles
+
+	// settingsMode is true while the settings overlay is open. While in
+	// this mode, regular navigation keys are intercepted by the settings
+	// handler instead of the file browser. settingsCursor tracks which
+	// settings row is currently focused.
+	settingsMode   bool
+	settingsCursor int
 }
 
 // New constructs a Model rooted at start. It returns an error only when
@@ -86,11 +99,18 @@ func New(start string, opts listing.Options) (Model, error) {
 	if err != nil {
 		return Model{}, err
 	}
-	m := Model{cwd: abs, opts: opts}
+	m := Model{cwd: abs, opts: opts, settings: DefaultSettings()}
+	m.applyTheme()
 	if err := m.refresh(); err != nil {
 		return Model{}, err
 	}
 	return m, nil
+}
+
+// applyTheme re-builds m.styles from the current settings.Theme. Called
+// after any change to settings.Theme (and once at construction).
+func (m *Model) applyTheme() {
+	m.styles = paletteFor(m.settings.Theme).styles()
 }
 
 func (m *Model) refresh() error {
@@ -339,6 +359,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.settingsMode {
+		return m.handleSettingsKey(msg)
+	}
 	if m.searchMode {
 		return m.handleSearchKey(msg)
 	}
@@ -377,9 +400,68 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.toggleHidden()
 	case "f":
 		m.startSearch()
+	case ".":
+		m.openSettings()
 	}
 	m.ensureCursorVisible()
 	return m, nil
+}
+
+// handleSettingsKey is the modal key handler used while settingsMode is
+// on. ↑/↓ moves between rows, ←/→ cycles the focused row's value (and
+// enter/space toggles bionic), and "." or esc closes the overlay.
+func (m Model) handleSettingsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c", "q":
+		return m, tea.Quit
+	case "esc", ".":
+		m.closeSettings()
+	case "up", "w", "k":
+		if m.settingsCursor > 0 {
+			m.settingsCursor--
+		}
+	case "down", "s", "j":
+		if m.settingsCursor < len(settingsFields)-1 {
+			m.settingsCursor++
+		}
+	case "left", "a", "h":
+		m.adjustSetting(-1)
+	case "right", "d", "l":
+		m.adjustSetting(1)
+	case "enter", " ":
+		m.adjustSetting(1)
+	}
+	return m, nil
+}
+
+// openSettings turns on the settings overlay, parking the focus on the
+// first row so the user always lands somewhere predictable.
+func (m *Model) openSettings() {
+	m.settingsMode = true
+	m.settingsCursor = 0
+}
+
+// closeSettings dismisses the overlay, returning to the file browser.
+func (m *Model) closeSettings() {
+	m.settingsMode = false
+}
+
+// adjustSetting cycles the value of the currently focused settings row
+// by delta (+1 or -1). Bionic is a toggle so any non-zero delta flips
+// it; the other fields wrap through their preset list.
+func (m *Model) adjustSetting(delta int) {
+	if m.settingsCursor < 0 || m.settingsCursor >= len(settingsFields) {
+		return
+	}
+	switch settingsFields[m.settingsCursor] {
+	case settingTheme:
+		m.settings.cycleTheme(delta)
+		m.applyTheme()
+	case settingBorders:
+		m.settings.cycleBorders(delta)
+	case settingBionic:
+		m.settings.toggleBionic()
+	}
 }
 
 // handleSearchKey is the modal key handler used while searchMode is on.

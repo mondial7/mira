@@ -25,7 +25,7 @@ file browser with ASCII-art icons, mouse clicks, keyboard navigation, and
                                                 ( o.o )   ( o.o )
                                                  > ^ <     v=-=v
 
-↑↓←→/wasd move · ⏎ open · ⌫ up · h hidden · f find · Q cd here · q quit
+↑↓←→/wasd move · ⏎ open · ⌫ up · h hidden · f find · . settings · Q cd here · q quit
 ```
 
 ## Features
@@ -104,6 +104,7 @@ mira --list | grep .go
 | `End` / `G`               | Jump to last item                             |
 | `h`                       | Toggle hidden (dotfile) entries               |
 | `f`                       | Find — start a fuzzy search                   |
+| `.`                       | Open the settings overlay                     |
 | `q` / `Ctrl-C`            | Quit                                          |
 | `Q`                       | Quit and `cd` into the explored directory †   |
 | Mouse click on a folder   | Enter that folder                             |
@@ -114,6 +115,23 @@ mira --list | grep .go
 When the find bar is open: type to filter (case-insensitive subsequence
 match), arrow keys to move within matches, `Enter` to open the
 highlighted folder, `Esc` to cancel and restore the full listing.
+
+### Settings
+
+Press `.` in the file browser to open the settings overlay. It exposes
+three knobs that change the look without leaving the TUI:
+
+| Setting   | Values                          | Default |
+| --------- | ------------------------------- | ------- |
+| Theme     | `slate`, `forest`, `ocean`, `rose` | `slate` |
+| Borders   | `fine`, `thick`, `dotted`       | `fine`  |
+| Bionic    | `on`, `off`                     | `on`    |
+
+Inside the overlay, `↑`/`↓` (or `j`/`k`) moves between rows, `←`/`→`
+(or `h`/`l`) cycles the focused value, `Enter` cycles forward, and
+`Esc` or `.` closes the overlay. Settings live for the session; a
+persisted-config story will land alongside the rest of the v1
+customisation surface.
 
 ### Quit & cd: shell wrapper
 
@@ -166,11 +184,11 @@ are explicitly deferred until **v1.0**:
 
 - **Fix `Q` quit-and-`cd` handoff.** See the known issue noted in the
   shell-wrapper section above.
-- **Settings view + customisation pattern.** A first-class `,` (or
-  similar) settings screen will land before v1, together with the
-  pattern that future customisation surfaces (theme, keymap, default
-  flags) will follow. Until then the TUI is intentionally
-  zero-configuration.
+- **Persisted settings.** The `.` overlay (theme · borders · bionic)
+  ships in this release, but choices reset on every launch. A
+  config-file backing for the same overlay — plus the keymap and
+  default-flag surfaces that will follow the same pattern — is the
+  remaining v1 piece.
 - **Homebrew tap.** Goreleaser support is wired but commented out;
   enabling it on a `homebrew-tap` repo is on the v1 checklist so macOS
   users can `brew install mondial7/tap/mira`.

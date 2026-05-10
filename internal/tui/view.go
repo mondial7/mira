@@ -23,6 +23,10 @@ import (
 //	                                         ← blank
 //	N items · ↑↓←→ ... q quit                ← help line
 func (m Model) View() string {
+	if m.settingsMode {
+		return m.renderSettingsView()
+	}
+	st := m.activeStyles()
 	var b strings.Builder
 	b.WriteString(m.renderHeader())
 	b.WriteByte('\n')
@@ -30,10 +34,21 @@ func (m Model) View() string {
 	b.WriteString("\n\n")
 	b.WriteString(m.renderGrid())
 	b.WriteString("\n\n")
-	b.WriteString(renderCritters(m.viewWidth(), m.animFrame, m.cursorLookDir()))
+	b.WriteString(renderCritters(m.viewWidth(), m.animFrame, m.cursorLookDir(), st.critter))
 	b.WriteString("\n\n")
 	b.WriteString(m.renderFooter())
 	return b.String()
+}
+
+// activeStyles returns the lipgloss bundle for the model's current
+// theme. Models constructed via New always have a populated bundle; the
+// zero-value fallback keeps direct Model{...} test fixtures (which never
+// render) from crashing if they ever do.
+func (m Model) activeStyles() themeStyles {
+	if m.styles.path.GetForeground() == lipgloss.Color("") {
+		return defaultStyles
+	}
+	return m.styles
 }
 
 // viewWidth returns at least 1 column so layout math always succeeds.
@@ -45,6 +60,7 @@ func (m Model) viewWidth() int {
 }
 
 func (m Model) renderHeader() string {
+	st := m.activeStyles()
 	path := m.cwd
 	indicator := m.scrollIndicator()
 	indW := lipgloss.Width(indicator)
@@ -63,7 +79,7 @@ func (m Model) renderHeader() string {
 			path = "…" + string(runes[len(runes)-(maxPath-1):])
 		}
 	}
-	pathBar := pathStyle.Render("▸ " + path)
+	pathBar := st.path.Render("▸ " + path)
 
 	if indW == 0 {
 		return pathBar
@@ -74,7 +90,7 @@ func (m Model) renderHeader() string {
 	if spaces < 1 {
 		spaces = 1
 	}
-	return pathBar + strings.Repeat(" ", spaces) + scrollIndicatorStyle.Render(indicator)
+	return pathBar + strings.Repeat(" ", spaces) + st.scrollIndicator.Render(indicator)
 }
 
 // scrollIndicator returns a 2-character glyph string showing whether the
@@ -104,6 +120,7 @@ func (m Model) renderSummary() string {
 	if m.searchMode {
 		return m.renderSearchBar()
 	}
+	st := m.activeStyles()
 	folders := plural(m.totalDirs, "folder", "folders")
 	files := plural(m.totalFiles, "file", "files")
 
@@ -113,38 +130,41 @@ func (m Model) renderSummary() string {
 	}
 	leaf := filepath.Base(m.cwd)
 	parts := []string{leaf, folders, files, size}
-	return helpStyle.Render("  " + strings.Join(parts, " · "))
+	return st.help.Render("  " + strings.Join(parts, " · "))
 }
 
 // renderSearchBar renders the in-progress search query plus a live
 // match counter. The cursor is a vertical-bar glyph after the query.
 func (m Model) renderSearchBar() string {
-	label := helpStyle.Render("  find: ")
-	query := searchQueryStyle.Render(m.searchQuery)
-	cursor := searchCursorStyle.Render("▍")
-	count := helpStyle.Render(fmt.Sprintf("  · %d / %d matches", len(m.entries), len(m.fullEntries)))
+	st := m.activeStyles()
+	label := st.help.Render("  find: ")
+	query := st.searchQuery.Render(m.searchQuery)
+	cursor := st.searchCursor.Render("▍")
+	count := st.help.Render(fmt.Sprintf("  · %d / %d matches", len(m.entries), len(m.fullEntries)))
 	return label + query + cursor + count
 }
 
 func (m Model) renderFooter() string {
-	help := "↑↓←→/wasd move · ⏎ open · ⌫ up · h hidden · f find · Q cd here · q quit"
+	st := m.activeStyles()
+	help := "↑↓←→/wasd move · ⏎ open · ⌫ up · h hidden · f find · . settings · Q cd here · q quit"
 	if m.searchMode {
 		help = "type to filter · ↑↓←→ move · ⏎ open · ⌫ erase · esc cancel"
 	}
 	if m.err != nil {
-		return errorStyle.Render("error: "+m.err.Error()) + "\n" + helpStyle.Render(help)
+		return st.errorText.Render("error: "+m.err.Error()) + "\n" + st.help.Render(help)
 	}
-	return helpStyle.Render(help)
+	return st.help.Render(help)
 }
 
 // renderGrid lays out the rows currently inside the scroll viewport,
 // separating them with a blank line for breathing room. Off-screen rows
 // are signalled by the ▲/▼ indicators in the header.
 func (m Model) renderGrid() string {
+	st := m.activeStyles()
 	cols := m.cols()
 	n := m.totalItems()
 	if n == 0 {
-		return helpStyle.Render("  (empty)")
+		return st.help.Render("  (empty)")
 	}
 
 	visible := m.visibleGridRows()
@@ -200,7 +220,7 @@ func renderCard(m Model, i int) []string {
 	sym, name, stats, kind := cardContent(m, i)
 	hidden := !parent && strings.HasPrefix(name, ".")
 
-	tl, tr, bl, br, h, v, bs, ns, ss := cardChrome(selected, kind, hidden)
+	g, bs, ns, ss := cardChrome(m.activeStyles(), m.settings.Borders, selected, kind, hidden)
 	cellW := m.cellWidth()
 	innerWidth := cellW - 2
 	if innerWidth < 1 {
@@ -217,8 +237,8 @@ func renderCard(m Model, i int) []string {
 	// Bionic reading: bold the leading half of each word-segment so the
 	// eye can pattern-match faster. Skipped for the ".." entry and for
 	// the selected entry (its style is already fully bold-accent — bionic
-	// would have no contrast).
-	useBionic := !parent && !selected
+	// would have no contrast). Also gated on the user's settings toggle.
+	useBionic := m.settings.Bionic && !parent && !selected
 	styledName := styleName(visibleName, ns, useBionic)
 
 	nameLine := " " + ns.Render(sym) + "  " + styledName
@@ -228,12 +248,12 @@ func renderCard(m Model, i int) []string {
 	statsLine = padDisplayWidth(statsLine, innerWidth)
 
 	lines := make([]string, CellHeight)
-	lines[lineTop] = bs.Render(tl + strings.Repeat(h, innerWidth) + tr)
-	lines[lineName] = bs.Render(v) + nameLine + bs.Render(v)
-	lines[lineSep] = bs.Render(v) + strings.Repeat(" ", innerWidth) + bs.Render(v)
-	lines[lineStats] = bs.Render(v) + statsLine + bs.Render(v)
-	lines[lineSpacer] = bs.Render(v) + strings.Repeat(" ", innerWidth) + bs.Render(v)
-	lines[lineBottom] = bs.Render(bl + strings.Repeat(h, innerWidth) + br)
+	lines[lineTop] = bs.Render(g.tl + strings.Repeat(g.h, innerWidth) + g.tr)
+	lines[lineName] = bs.Render(g.v) + nameLine + bs.Render(g.v)
+	lines[lineSep] = bs.Render(g.v) + strings.Repeat(" ", innerWidth) + bs.Render(g.v)
+	lines[lineStats] = bs.Render(g.v) + statsLine + bs.Render(g.v)
+	lines[lineSpacer] = bs.Render(g.v) + strings.Repeat(" ", innerWidth) + bs.Render(g.v)
+	lines[lineBottom] = bs.Render(g.bl + strings.Repeat(g.h, innerWidth) + g.br)
 	return lines
 }
 
@@ -378,37 +398,27 @@ const (
 )
 
 // cardChrome returns the border glyphs + lipgloss styles for a card based
-// on whether it's selected, what kind of entry it represents, and whether
-// it's a hidden (dotfile) entry. Hidden entries inherit the kind's border
-// style but get dimmed-italic text so they're visually secondary.
-func cardChrome(selected bool, kind cardKind, hidden bool) (
-	tl, tr, bl, br, h, v string,
-	border, name, stats lipgloss.Style,
+// on the active border preset, whether it's selected, what kind of entry
+// it represents, and whether it's a hidden (dotfile) entry. Hidden entries
+// keep the active border style but get dimmed-italic text so they're
+// visually secondary.
+func cardChrome(st themeStyles, preset BorderPreset, selected bool, kind cardKind, hidden bool) (
+	g glyphSet, border, name, stats lipgloss.Style,
 ) {
+	g = pickGlyphs(preset, kind, selected)
 	switch {
 	case selected:
-		tl, tr, bl, br = heavyTL, heavyTR, heavyBL, heavyBR
-		h, v = heavyH, heavyV
-		border = selectedStyle
-		name = nameSelectedStyle
-		stats = statsSelectedStyle
-		return
-	case kind == kindFile:
-		tl, tr, bl, br = doubleTL, doubleTR, doubleBL, doubleBR
-		h, v = doubleH, doubleV
-		border = borderStyle
-		name = nameStyle
-		stats = statsStyle
+		border = st.selected
+		name = st.nameSelected
+		stats = st.statsSelected
 	default:
-		tl, tr, bl, br = roundTL, roundTR, roundBL, roundBR
-		h, v = roundH, roundV
-		border = borderStyle
-		name = nameStyle
-		stats = statsStyle
+		border = st.border
+		name = st.name
+		stats = st.stats
 	}
-	if hidden {
-		name = nameHiddenStyle
-		stats = statsHiddenStyle
+	if hidden && !selected {
+		name = st.nameHidden
+		stats = st.statsHidden
 	}
 	return
 }
@@ -465,6 +475,76 @@ func plural(n int, one, many string) string {
 		return fmt.Sprintf("1 %s", one)
 	}
 	return fmt.Sprintf("%d %s", n, many)
+}
+
+// renderSettingsView draws the modal settings overlay. Layout:
+//
+//	▸ /current/path
+//
+//	  Settings
+//
+//	  ▸ Theme    < slate >
+//	    Borders  < fine >
+//	    Bionic   < on >
+//
+//	  ↑↓ move · ←→ change · esc / . done
+func (m Model) renderSettingsView() string {
+	st := m.activeStyles()
+	var b strings.Builder
+	b.WriteString(m.renderHeader())
+	b.WriteString("\n\n")
+
+	b.WriteString("  " + st.settingsTitle.Render("Settings"))
+	b.WriteString("\n\n")
+
+	const labelW = 9
+	for i, f := range settingsFields {
+		var label, value string
+		switch f {
+		case settingTheme:
+			label = "Theme"
+			value = m.settings.Theme.Label()
+		case settingBorders:
+			label = "Borders"
+			value = m.settings.Borders.Label()
+		case settingBionic:
+			label = "Bionic"
+			value = onOff(m.settings.Bionic)
+		}
+
+		marker := "  "
+		if i == m.settingsCursor {
+			marker = st.settingsCursor.Render("▸ ")
+		}
+
+		labelText := st.settingsLabel.Render(padRight(label+":", labelW))
+		// Wrap value in chevrons so the user knows it's cyclable.
+		valueText := st.settingsValue.Render("< " + value + " >")
+		b.WriteString("  " + marker + labelText + "  " + valueText + "\n")
+	}
+
+	b.WriteString("\n")
+	b.WriteString("  " + st.help.Render("↑↓ move · ←→ change · ⏎ cycle · esc / . done"))
+	b.WriteString("\n\n")
+	b.WriteString(renderCritters(m.viewWidth(), m.animFrame, 0, st.critter))
+	return b.String()
+}
+
+// onOff is a tiny helper for boolean settings rows.
+func onOff(v bool) string {
+	if v {
+		return "on"
+	}
+	return "off"
+}
+
+// padRight pads s with spaces on the right to reach width display columns.
+func padRight(s string, width int) string {
+	w := lipgloss.Width(s)
+	if w >= width {
+		return s
+	}
+	return s + strings.Repeat(" ", width-w)
 }
 
 // FlatList renders entries as a plain, unstyled list — used for piped output.

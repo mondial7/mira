@@ -51,5 +51,33 @@ func TestPreview(t *testing.T) {
 		model.searchQuery = q
 		model.updateFilter()
 	}
+	if v := os.Getenv("BF_PREVIEW_THEME"); v != "" {
+		switch v {
+		case "forest":
+			model.settings.Theme = ThemeForest
+		case "ocean":
+			model.settings.Theme = ThemeOcean
+		case "rose":
+			model.settings.Theme = ThemeRose
+		}
+		model.applyTheme()
+	}
+	if v := os.Getenv("BF_PREVIEW_BORDERS"); v != "" {
+		switch v {
+		case "thick":
+			model.settings.Borders = BorderThick
+		case "dotted":
+			model.settings.Borders = BorderDotted
+		}
+	}
+	if os.Getenv("BF_PREVIEW_BIONIC_OFF") != "" {
+		model.settings.Bionic = false
+	}
+	if os.Getenv("BF_PREVIEW_SETTINGS") != "" {
+		model.openSettings()
+		if v := os.Getenv("BF_PREVIEW_SETTINGS_ROW"); v != "" {
+			_, _ = fmt.Sscanf(v, "%d", &model.settingsCursor)
+		}
+	}
 	fmt.Println("\n" + model.View())
 }
