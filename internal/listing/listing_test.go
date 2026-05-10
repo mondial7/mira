@@ -223,6 +223,61 @@ func TestList_SymlinkDetection(t *testing.T) {
 	}
 }
 
+func TestList_PopulatesRecursiveSizeForDirs(t *testing.T) {
+	root := scaffold(t)
+	// Add a known payload to src/a.go so we can assert the dir size.
+	if err := os.WriteFile(filepath.Join(root, "src", "a.go"), []byte("hello"), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "src", "b.go"), []byte("world!"), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	entries, err := List(root, Options{UseGitignore: true})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+
+	var src *Entry
+	for i := range entries {
+		if entries[i].Name == "src" {
+			src = &entries[i]
+			break
+		}
+	}
+	if src == nil {
+		t.Fatal("src/ missing from listing")
+	}
+	if !src.SizeExact {
+		t.Errorf("src SizeExact = false, want true (small dir)")
+	}
+	const want = int64(11) // "hello" + "world!"
+	if src.Size != want {
+		t.Errorf("src Size = %d, want %d", src.Size, want)
+	}
+}
+
+func TestList_FilesKeepOwnSize(t *testing.T) {
+	root := scaffold(t)
+	if err := os.WriteFile(filepath.Join(root, "main.go"), []byte("package main"), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	entries, err := List(root, Options{UseGitignore: true})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	for _, e := range entries {
+		if e.Name == "main.go" {
+			if e.Size != int64(len("package main")) {
+				t.Errorf("main.go Size = %d, want %d", e.Size, len("package main"))
+			}
+			if !e.SizeExact {
+				t.Errorf("file SizeExact must be true")
+			}
+		}
+	}
+}
+
 func TestList_PopulatesChildCountForDirs(t *testing.T) {
 	root := scaffold(t)
 	entries, err := List(root, Options{UseGitignore: true})

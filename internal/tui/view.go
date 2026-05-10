@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -12,6 +13,7 @@ import (
 // View renders the current model state. The structure is:
 //
 //	▸ /current/path                          ← path bar (1 line)
+//	  3 folders · 8 files · ~4.2MB           ← stats summary (1 line)
 //	                                         ← blank
 //	┌── grid of cards, CellHeight tall ──┐
 //	│  with rowGap blank line between    │
@@ -23,6 +25,8 @@ import (
 func (m Model) View() string {
 	var b strings.Builder
 	b.WriteString(m.renderHeader())
+	b.WriteByte('\n')
+	b.WriteString(m.renderSummary())
 	b.WriteString("\n\n")
 	b.WriteString(m.renderGrid())
 	b.WriteString("\n\n")
@@ -51,6 +55,23 @@ func (m Model) renderHeader() string {
 		}
 	}
 	return pathStyle.Render("▸ " + path)
+}
+
+// renderSummary draws the second header line with a quick recap of the
+// current directory: how many folders + files it holds and their total
+// size. The size is prefixed with "~" when the recursive walk hit its
+// budget cap and so the number is approximate.
+func (m Model) renderSummary() string {
+	folders := plural(m.totalDirs, "folder", "folders")
+	files := plural(m.totalFiles, "file", "files")
+
+	size := listing.HumanSize(m.totalSize)
+	if !m.sizeExact {
+		size = "~" + size
+	}
+	leaf := filepath.Base(m.cwd)
+	parts := []string{leaf, folders, files, size}
+	return helpStyle.Render("  " + strings.Join(parts, " · "))
 }
 
 func (m Model) renderFooter() string {
@@ -107,18 +128,26 @@ func (m Model) renderRow(start, end int) string {
 }
 
 // renderCard returns CellHeight lines of the card at index i. Each line is
-// already padded to exactly CellWidth display columns so renderRow can
+// padded to exactly m.cellWidth() display columns so renderRow can
 // concatenate horizontally without extra alignment.
 func renderCard(m Model, i int) []string {
 	selected := i == m.cursor
 	sym, name, stats, kind := cardContent(m, i)
 
 	tl, tr, bl, br, h, v, bs, ns, ss := cardChrome(selected, kind)
-	innerWidth := CellWidth - 2
+	cellW := m.cellWidth()
+	innerWidth := cellW - 2
+	if innerWidth < 1 {
+		innerWidth = 1
+	}
 
-	// Plain-text content; bs/ns/ss apply colour.
 	header := fmt.Sprintf(" %s  %s", sym, name)
 	statsLine := fmt.Sprintf("   %s", stats)
+
+	// Safety net: if dynamic sizing wasn't enough (e.g. terminal is too
+	// narrow), trim from the right with an ellipsis so the box stays sealed.
+	header = clampDisplay(header, innerWidth)
+	statsLine = clampDisplay(statsLine, innerWidth)
 
 	lines := make([]string, CellHeight)
 	lines[lineTop] = bs.Render(tl + strings.Repeat(h, innerWidth) + tr)
@@ -132,10 +161,9 @@ func renderCard(m Model, i int) []string {
 
 // cardContent assembles the human-readable pieces shown inside the card:
 // selection symbol, display name, single-line stats, and the entry kind
-// used to pick border style.
+// used to pick border style. Names are returned untruncated; the renderer
+// applies a final safety-net clamp only when no dynamic width can fit.
 func cardContent(m Model, i int) (sym, name, stats string, kind cardKind) {
-	maxNameWidth := CellWidth - 6 // 2 borders + 1 leading space + 1 sym + 2 spaces
-
 	if m.isParent(i) {
 		sym = symParent
 		if i == m.cursor {
@@ -153,14 +181,14 @@ func cardContent(m Model, i int) (sym, name, stats string, kind cardKind) {
 			sym = symLinkSelected
 		}
 		kind = kindLink
-		stats = "→ " + truncate(e.Target, CellWidth-7)
+		stats = "→ " + e.Target
 	case e.IsDir:
 		sym = symFolder
 		if selected {
 			sym = symFolderSelected
 		}
 		kind = kindDir
-		stats = childCountLabel(e.ChildCount)
+		stats = dirStats(e)
 	default:
 		sym = symFile
 		if selected {
@@ -169,8 +197,29 @@ func cardContent(m Model, i int) (sym, name, stats string, kind cardKind) {
 		kind = kindFile
 		stats = listing.HumanSize(e.Size)
 	}
-	name = truncate(e.Name, maxNameWidth)
+	name = e.Name
 	return
+}
+
+// cardTextLines returns the rendered display widths of the name and stats
+// lines for entry i, BEFORE styling. computeCellWidth uses these to size
+// cards.
+func cardTextLines(m Model, i int) (nameW, statsW int) {
+	sym, name, stats, _ := cardContent(m, i)
+	nameLine := fmt.Sprintf(" %s  %s", sym, name)
+	statsLine := fmt.Sprintf("   %s", stats)
+	return lipgloss.Width(nameLine), lipgloss.Width(statsLine)
+}
+
+// dirStats formats a directory's stats line: child count + total size.
+// Approximate sizes are flagged with a "~" prefix.
+func dirStats(e listing.Entry) string {
+	count := childCountLabel(e.ChildCount)
+	size := listing.HumanSize(e.Size)
+	if !e.SizeExact {
+		size = "~" + size
+	}
+	return count + " · " + size
 }
 
 type cardKind int
@@ -196,14 +245,14 @@ func cardChrome(selected bool, kind cardKind) (
 		name = nameSelectedStyle
 		stats = statsSelectedStyle
 	case kind == kindFile:
-		tl, tr, bl, br = dashedTL, dashedTR, dashedBL, dashedBR
-		h, v = dashedH, dashedV
+		tl, tr, bl, br = doubleTL, doubleTR, doubleBL, doubleBR
+		h, v = doubleH, doubleV
 		border = borderStyle
 		name = nameStyle
 		stats = statsStyle
 	default:
-		tl, tr, bl, br = borderTL, borderTR, borderBL, borderBR
-		h, v = borderH, borderV
+		tl, tr, bl, br = roundTL, roundTR, roundBL, roundBR
+		h, v = roundH, roundV
 		border = borderStyle
 		name = nameStyle
 		stats = statsStyle
@@ -223,6 +272,26 @@ func padToWidth(s string, width int, style lipgloss.Style) string {
 	return rendered + strings.Repeat(" ", width-w)
 }
 
+// clampDisplay truncates s with an ellipsis if its display width exceeds
+// max columns. This is a safety net used only when the dynamic cell
+// sizing couldn't grow large enough (e.g. in extremely narrow terminals).
+func clampDisplay(s string, max int) string {
+	if max <= 0 {
+		return ""
+	}
+	if lipgloss.Width(s) <= max {
+		return s
+	}
+	if max == 1 {
+		return "…"
+	}
+	r := []rune(s)
+	for len(r) > 0 && lipgloss.Width(string(r))+1 > max {
+		r = r[:len(r)-1]
+	}
+	return string(r) + "…"
+}
+
 // childCountLabel renders the dir-stats summary with singular/plural and a
 // graceful fallback when the count is unknown.
 func childCountLabel(n int) string {
@@ -238,18 +307,11 @@ func childCountLabel(n int) string {
 	}
 }
 
-func truncate(s string, max int) string {
-	if max <= 0 {
-		return ""
+func plural(n int, one, many string) string {
+	if n == 1 {
+		return fmt.Sprintf("1 %s", one)
 	}
-	r := []rune(s)
-	if len(r) <= max {
-		return s
-	}
-	if max == 1 {
-		return "…"
-	}
-	return string(r[:max-1]) + "…"
+	return fmt.Sprintf("%d %s", n, many)
 }
 
 // FlatList renders entries as a plain, unstyled list — used for piped output.

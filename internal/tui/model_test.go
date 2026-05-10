@@ -55,8 +55,10 @@ func TestModel_ColsClampsToOne(t *testing.T) {
 }
 
 func TestModel_ColsScalesWithWidth(t *testing.T) {
-	// columnStride = CellWidth + colGap; need at least 3*stride - colGap to fit 3 cards
-	m := Model{width: columnStride*3 - colGap}
+	// With cellW unset, cellWidth() returns MinCellWidth. Stride is
+	// MinCellWidth + colGap; we want 3 cards to fit exactly.
+	stride := MinCellWidth + colGap
+	m := Model{width: stride*3 - colGap}
 	if got := m.cols(); got != 3 {
 		t.Errorf("cols = %d, want 3", got)
 	}
@@ -68,18 +70,19 @@ func TestModel_CellAtMapsClicksToIndex(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	m.width = columnStride*3 - colGap // 3 columns
+	stride := m.columnStride()
+	m.width = stride*3 - colGap // 3 columns
 
 	// First cell of first row → ".." (index 0).
 	if got := m.cellAt(1, headerLines); got != 0 {
 		t.Errorf("first cell click = %d, want 0", got)
 	}
 	// Second cell of first row starts at columnStride.
-	if got := m.cellAt(columnStride+1, headerLines); got != 1 {
+	if got := m.cellAt(stride+1, headerLines); got != 1 {
 		t.Errorf("second cell click = %d, want 1", got)
 	}
 	// A click in the gutter between cards is rejected.
-	if got := m.cellAt(CellWidth, headerLines); got != -1 {
+	if got := m.cellAt(m.cellWidth(), headerLines); got != -1 {
 		t.Errorf("gutter click = %d, want -1", got)
 	}
 	// Click in the header row (above grid).
@@ -98,7 +101,7 @@ func TestModel_KeyboardNavigationStaysInBounds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	m.width = CellWidth * 5
+	m.width = MinCellWidth * 5
 
 	// Right past the end should clamp.
 	for i := 0; i < 100; i++ {
@@ -125,7 +128,7 @@ func TestModel_EnterDescendsIntoDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	m.width = CellWidth * 5
+	m.width = MinCellWidth * 5
 
 	// First non-parent entry should be "alpha" (dirs sort before files).
 	m.cursor = 1
@@ -146,7 +149,7 @@ func TestModel_BackspaceGoesUp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	m.width = CellWidth * 5
+	m.width = MinCellWidth * 5
 
 	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
 	m = next.(Model)
@@ -162,8 +165,11 @@ func TestModel_CursorLookDirTracksPosition(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	// Force a 3-column layout so the thirds carve cleanly.
-	m.width = columnStride*3 - colGap
+	// Force a 3-column layout so the thirds carve cleanly. We pull the
+	// stride from the model so dynamic cell sizing (which depends on the
+	// actual entries) doesn't break the test.
+	stride := m.columnStride()
+	m.width = stride*3 - colGap
 
 	cases := []struct {
 		cursor int

@@ -11,7 +11,7 @@ import (
 	"github.com/mondial7/banana-four/internal/listing"
 )
 
-func TestTruncate(t *testing.T) {
+func TestClampDisplay(t *testing.T) {
 	cases := []struct {
 		in   string
 		max  int
@@ -26,8 +26,8 @@ func TestTruncate(t *testing.T) {
 		{"abcd", 3, "ab…"},
 	}
 	for _, tc := range cases {
-		if got := truncate(tc.in, tc.max); got != tc.want {
-			t.Errorf("truncate(%q, %d) = %q, want %q", tc.in, tc.max, got, tc.want)
+		if got := clampDisplay(tc.in, tc.max); got != tc.want {
+			t.Errorf("clampDisplay(%q, %d) = %q, want %q", tc.in, tc.max, got, tc.want)
 		}
 	}
 }
@@ -102,7 +102,7 @@ func TestView_EmptyDirectoryShowsHint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	m.width = CellWidth * 3
+	m.width = MinCellWidth * 3
 	out := m.View()
 	// The grid is empty (only ".." parent), so the help text should still appear.
 	if !strings.Contains(out, "..") {

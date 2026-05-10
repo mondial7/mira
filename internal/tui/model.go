@@ -9,13 +9,13 @@ import (
 	"github.com/mondial7/banana-four/internal/listing"
 )
 
-// headerLines and footerLines define how many lines the top path bar and
-// the bottom critter+help block consume. They're used both for layout
-// (computing how many grid rows fit) and for click → cell mapping.
+// headerLines and footerLines define how many lines the top header block
+// and the bottom critter+help block consume. They're used for click →
+// cell mapping (header = number of lines BEFORE the grid starts).
 const (
-	headerLines = 2 // path bar + blank line
+	// Header = 1 path bar + 1 stats summary + 1 blank.
+	headerLines = 3
 	// Footer = 1 blank gap + CritterHeight + 1 blank + 1 help line.
-	// Defined as a const expression for clarity.
 	footerLines = 1 + CritterHeight + 1 + 1
 )
 
@@ -45,6 +45,16 @@ type Model struct {
 	// pickFrames. The critters' look-direction is derived from the cursor
 	// position itself, so it's not stored here.
 	animFrame int
+
+	// cellW is the per-listing card width, recomputed after every refresh
+	// so it expands to fit the longest entry name without truncation.
+	cellW int
+
+	// Aggregated stats over the current listing, displayed in the header.
+	totalFiles int
+	totalDirs  int
+	totalSize  int64
+	sizeExact  bool
 }
 
 // New constructs a Model rooted at start. It returns an error only when
@@ -72,7 +82,30 @@ func (m *Model) refresh() error {
 		m.cursor = 0
 	}
 	m.err = nil
+	m.recomputeAggregates()
+	m.cellW = m.computeCellWidth()
 	return nil
+}
+
+// recomputeAggregates folds the listing into the header stats counters.
+// sizeExact stays true only if every directory size in the listing was
+// fully resolved within the walk budget.
+func (m *Model) recomputeAggregates() {
+	m.totalDirs = 0
+	m.totalFiles = 0
+	m.totalSize = 0
+	m.sizeExact = true
+	for _, e := range m.entries {
+		if e.IsDir {
+			m.totalDirs++
+		} else {
+			m.totalFiles++
+		}
+		m.totalSize += e.Size
+		if !e.SizeExact {
+			m.sizeExact = false
+		}
+	}
 }
 
 // totalItems counts entries plus the synthetic ".." at index 0.
@@ -82,19 +115,30 @@ func (m Model) isParent(i int) bool { return i == 0 }
 
 func (m Model) entryAt(i int) listing.Entry { return m.entries[i-1] }
 
-// columnStride is the per-column horizontal advance: card width plus the
-// horizontal gap between cards.
-const columnStride = CellWidth + colGap
+// cellWidth returns the active card width, falling back to the minimum
+// before refresh has populated cellW.
+func (m Model) cellWidth() int {
+	if m.cellW < MinCellWidth {
+		return MinCellWidth
+	}
+	return m.cellW
+}
+
+// columnStride is the horizontal advance from one card's left edge to
+// the next: card width plus the inter-card gap.
+func (m Model) columnStride() int { return m.cellWidth() + colGap }
 
 // cols returns the number of cells per row for the current width, never
 // less than 1 so the layout stays valid in narrow terminals.
 func (m Model) cols() int {
-	if m.width < CellWidth {
+	cw := m.cellWidth()
+	if m.width < cw {
 		return 1
 	}
+	stride := m.columnStride()
 	// Add colGap before dividing so we count the trailing card whose gap
 	// would otherwise overflow the available width.
-	return (m.width + colGap) / columnStride
+	return (m.width + colGap) / stride
 }
 
 // cellAt maps a terminal click to a cell index. y is in absolute terminal
@@ -106,9 +150,10 @@ func (m Model) cellAt(x, y int) int {
 		return -1
 	}
 	cols := m.cols()
-	col := x / columnStride
+	stride := m.columnStride()
+	col := x / stride
 	// Reject clicks landing in the inter-card horizontal gap.
-	if x%columnStride >= CellWidth {
+	if x%stride >= m.cellWidth() {
 		return -1
 	}
 	rowStride := CellHeight + rowGap
@@ -124,6 +169,32 @@ func (m Model) cellAt(x, y int) int {
 		return -1
 	}
 	return i
+}
+
+// computeCellWidth measures the longest name + stats string across the
+// current listing (including the synthetic ".." entry) and picks a card
+// width that fits all of them — clamped to MinCellWidth on the low end
+// and the terminal width on the high end so the grid never overflows.
+func (m Model) computeCellWidth() int {
+	maxInner := MinCellWidth - 2
+	for i := 0; i < m.totalItems(); i++ {
+		nameLine, statsLine := cardTextLines(m, i)
+		w := nameLine
+		if statsLine > w {
+			w = statsLine
+		}
+		if w > maxInner {
+			maxInner = w
+		}
+	}
+	cellW := maxInner + 3 // 2 borders + 1 char of trailing breathing room
+	if m.width > 0 && cellW > m.width {
+		cellW = m.width
+	}
+	if cellW < MinCellWidth {
+		cellW = MinCellWidth
+	}
+	return cellW
 }
 
 // cursorLookDir returns -1, 0, or 1 based on which third of the row the

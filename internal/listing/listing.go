@@ -17,13 +17,17 @@ type Entry struct {
 	IsDir     bool
 	IsSymlink bool
 	Mode      os.FileMode
-	Size      int64
+	Size      int64  // for files: own size; for dirs: total recursive size (capped, see SizeExact)
 	Target    string // resolved symlink target, empty for non-symlinks
 	// ChildCount is the raw number of entries in this directory (or -1 if
 	// not applicable / not readable). It includes dotfiles and ignored
 	// entries on purpose: it's a quick "how full is this?" hint, not a
 	// preview of what entering would show.
 	ChildCount int
+	// SizeExact reports whether Size is the full recursive total (true) or
+	// a partial sum because the budget-capped walk stopped early (false).
+	// For files it's always true.
+	SizeExact bool
 }
 
 // Options controls how a directory is listed.
@@ -84,6 +88,7 @@ func List(dir string, opts Options) ([]Entry, error) {
 			Mode:       info.Mode(),
 			Size:       info.Size(),
 			ChildCount: -1,
+			SizeExact:  true,
 		}
 		if entry.IsSymlink {
 			if t, err := os.Readlink(path); err == nil {
@@ -94,6 +99,7 @@ func List(dir string, opts Options) ([]Entry, error) {
 			if children, err := os.ReadDir(path); err == nil {
 				entry.ChildCount = len(children)
 			}
+			entry.Size, entry.SizeExact = walkSize(path)
 		}
 		out = append(out, entry)
 	}

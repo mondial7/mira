@@ -7,10 +7,13 @@ import "github.com/charmbracelet/lipgloss"
 // between rows. The math elsewhere uses CellHeight (the card itself) and
 // rowGap (the spacer) so click-to-cell mapping stays consistent.
 const (
-	CellWidth  = 20
-	CellHeight = 6
-	rowGap     = 1 // blank line drawn between rows of cards
-	colGap     = 2 // blank columns drawn between cards in a row
+	// MinCellWidth is the floor for dynamic cell sizing. Cards never get
+	// narrower than this even when entries are tiny, so the UI keeps a
+	// consistent feel.
+	MinCellWidth = 20
+	CellHeight   = 6
+	rowGap       = 1 // blank line drawn between rows of cards
+	colGap       = 2 // blank columns drawn between cards in a row
 )
 
 // Per-row line indices, named for readability.
@@ -37,18 +40,20 @@ const (
 	symParentSelected = "▲"
 )
 
-// Border glyphs.
+// Border glyphs. Three distinct styles let the user tell entry kinds apart
+// at a glance even when colours are off:
+//   - rounded single-line for directories
+//   - double-line for regular files
+//   - heavy single-line for the selected entry (overrides kind)
 const (
-	borderTL, borderTR, borderBL, borderBR = "╭", "╮", "╰", "╯"
-	borderH, borderV                       = "─", "│"
+	roundTL, roundTR, roundBL, roundBR = "╭", "╮", "╰", "╯"
+	roundH, roundV                     = "─", "│"
 
-	dashedTL, dashedTR, dashedBL, dashedBR = "╭", "╮", "╰", "╯"
-	dashedH, dashedV                       = "┈", "┊"
+	doubleTL, doubleTR, doubleBL, doubleBR = "╔", "╗", "╚", "╝"
+	doubleH, doubleV                       = "═", "║"
 
 	heavyTL, heavyTR, heavyBL, heavyBR = "┏", "┓", "┗", "┛"
 	heavyH, heavyV                     = "━", "┃"
-
-	separatorH = "─" // light horizontal rule beneath the name line
 )
 
 // Monochromatic slate-gray palette + a single warm amber accent. Indices
