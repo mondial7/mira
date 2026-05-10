@@ -1,3 +1,4 @@
+// Package tui implements the interactive terminal UI for mira.
 package tui
 
 import "strings"
