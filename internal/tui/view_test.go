@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -35,6 +37,57 @@ func TestCenterInCell_PadsToWidth(t *testing.T) {
 	}
 	if !strings.Contains(got, "ab") {
 		t.Errorf("expected content preserved, got %q", got)
+	}
+}
+
+// scaffoldForView builds a tiny fixture for end-to-end View rendering.
+func scaffoldForView(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "src"), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "go.mod"), nil, 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	return root
+}
+
+// TestView_RendersAllSections is a smoke test: it doesn't assert exact ANSI
+// output (that would be brittle), only that View produces non-empty output
+// containing the path, every entry name, and the help text.
+func TestView_RendersAllSections(t *testing.T) {
+	root := scaffoldForView(t)
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	// Use a generous width so the path doesn't get truncated by renderHeader.
+	m.width = 200
+	m.height = 30
+
+	out := m.View()
+	if out == "" {
+		t.Fatal("View() returned empty string")
+	}
+	for _, want := range []string{filepath.Base(root), "src", "go.mod", "items", "quit"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("View() missing %q\n%s", want, out)
+		}
+	}
+}
+
+func TestView_EmptyDirectoryShowsHint(t *testing.T) {
+	root := t.TempDir()
+	m, err := New(root, listing.Options{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	m.width = CellWidth * 3
+	out := m.View()
+	// The grid is empty (only ".." parent), so the help text should still appear.
+	if !strings.Contains(out, "..") {
+		t.Errorf("expected '..' parent in output:\n%s", out)
 	}
 }
 

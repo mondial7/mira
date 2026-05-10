@@ -43,13 +43,13 @@ const (
 )
 
 var (
-	colorAccent  = lipgloss.Color("69")  // soft purple-blue
-	colorDim     = lipgloss.Color("245") // muted gray
-	colorFolder  = lipgloss.Color("39")  // blue
-	colorFile    = lipgloss.Color("252") // light gray
-	colorLink    = lipgloss.Color("87")  // cyan
-	colorErr     = lipgloss.Color("203") // red
-	colorPathBg  = lipgloss.Color("236") // dark gray bg
+	colorAccent = lipgloss.Color("69")  // soft purple-blue
+	colorDim    = lipgloss.Color("245") // muted gray
+	colorFolder = lipgloss.Color("39")  // blue
+	colorFile   = lipgloss.Color("252") // light gray
+	colorLink   = lipgloss.Color("87")  // cyan
+	colorErr    = lipgloss.Color("203") // red
+	colorPathBg = lipgloss.Color("236") // dark gray bg
 
 	pathStyle = lipgloss.NewStyle().
 			Bold(true).

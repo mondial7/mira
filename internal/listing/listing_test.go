@@ -40,14 +40,14 @@ func scaffold(t *testing.T) string {
 	}
 
 	files := map[string]string{
-		".gitignore": "build/\n*.log\n",
-		"README.md":  "",
-		"main.go":    "",
+		".gitignore":    "build/\n*.log\n",
+		"README.md":     "",
+		"main.go":       "",
 		"build/out.bin": "",
-		"src/a.go":   "",
-		"src/b.go":   "",
-		"app.log":    "",
-		".secret":    "",
+		"src/a.go":      "",
+		"src/b.go":      "",
+		"app.log":       "",
+		".secret":       "",
 	}
 	for name, body := range files {
 		full := filepath.Join(root, name)

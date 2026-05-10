@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>banana-four — a pretty folder visualizer for your terminal</title>
+  <meta name="description" content="banana-four is a desktop-style terminal file browser with ASCII-art icons, mouse navigation, and .gitignore-aware listing.">
+  <meta name="theme-color" content="#0e0f12">
+  <meta property="og:title" content="banana-four">
+  <meta property="og:description" content="A pretty, interactive folder visualizer for the terminal.">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="hero">
+    <div class="container">
+      <div class="brand">
+        <span class="prompt">$</span>
+        <h1>banana-four</h1>
+      </div>
+      <p class="tagline">A pretty, interactive folder visualizer for the terminal — desktop file-manager vibes, single-binary install, gitignore-aware out of the box.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/marcomondini/banana-four/releases/latest">Download latest</a>
+        <a class="btn" href="https://github.com/marcomondini/banana-four">View on GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="container demo-block">
+      <div class="window" aria-hidden="true">
+        <div class="titlebar">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <span class="title">banana-four ~/code/banana-four</span>
+        </div>
+        <pre class="screen"><span class="path">▸ /Users/you/code/banana-four</span>
+
+  <span class="cell muted">╭───╮</span>     <span class="cell sel">┏━━━┓</span>     <span class="cell folder">╭───╮</span>     <span class="cell folder">╭───╮</span>     <span class="cell file">╭┄┄┄╮</span>     <span class="cell file">╭┄┄┄╮</span>
+  <span class="cell muted">│ ↑ │</span>     <span class="cell sel">┃ ▸ ┃</span>     <span class="cell folder">│ ▸ │</span>     <span class="cell folder">│ ▸ │</span>     <span class="cell file">┊ · ┊</span>     <span class="cell file">┊ · ┊</span>
+  <span class="cell muted">╰───╯</span>     <span class="cell sel">┗━━━┛</span>     <span class="cell folder">╰───╯</span>     <span class="cell folder">╰───╯</span>     <span class="cell file">╰┄┄┄╯</span>     <span class="cell file">╰┄┄┄╯</span>
+   <span class="muted">..</span>      <span class="sel">docs</span>     <span class="folder">internal</span>    <span class="folder">src</span>      <span class="file">go.mod</span>    <span class="file">main.go</span>
+
+<span class="muted">5 items · ↑↓←→ / hjkl move · ⏎ open · ⌫ up · click to enter · q quit</span></pre>
+      </div>
+    </section>
+
+    <section class="container">
+      <h2>Why banana-four?</h2>
+      <div class="grid">
+        <article>
+          <h3>Single layer, like a desktop</h3>
+          <p>No deep tree to scan. One folder per screen, click to dive in.</p>
+        </article>
+        <article>
+          <h3>Mouse + keyboard</h3>
+          <p>Arrow keys, hjkl, or just click. Whatever your hands prefer.</p>
+        </article>
+        <article>
+          <h3>Gitignore aware</h3>
+          <p>Respects every <code>.gitignore</code> from repo root down to your cwd. Toggle off with <code>--no-ignore</code>.</p>
+        </article>
+        <article>
+          <h3>Pipe-friendly fallback</h3>
+          <p>Detects when stdout isn't a terminal and prints a clean flat list. Works great with <code>grep</code>, <code>fzf</code>, and friends.</p>
+        </article>
+        <article>
+          <h3>Zero config</h3>
+          <p>Single binary, no shell integration, no rc-file dance. Just put it on <code>PATH</code>.</p>
+        </article>
+        <article>
+          <h3>Read-only by design</h3>
+          <p>banana-four never writes, executes, or transmits. See <a href="https://github.com/marcomondini/banana-four/blob/main/SECURITY.md">SECURITY.md</a>.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="container">
+      <h2>Install</h2>
+      <h3>Homebrew</h3>
+      <pre class="snippet">brew install marcomondini/tap/banana-four</pre>
+      <h3>Go</h3>
+      <pre class="snippet">go install github.com/marcomondini/banana-four@latest</pre>
+      <h3>Pre-built binaries</h3>
+      <p>Grab a tarball for your platform from the <a href="https://github.com/marcomondini/banana-four/releases/latest">releases page</a>. Each release ships SHA-256 checksums and an SBOM you can verify before extracting.</p>
+    </section>
+
+    <section class="container">
+      <h2>Quick reference</h2>
+      <table>
+        <thead><tr><th>Key</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><kbd>←</kbd> <kbd>→</kbd> <kbd>h</kbd> <kbd>l</kbd></td><td>Move cursor left/right</td></tr>
+          <tr><td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>k</kbd> <kbd>j</kbd></td><td>Move cursor up/down</td></tr>
+          <tr><td><kbd>Enter</kbd> / <kbd>Space</kbd></td><td>Open selected folder</td></tr>
+          <tr><td><kbd>Backspace</kbd> / <kbd>Esc</kbd></td><td>Go up one directory</td></tr>
+          <tr><td><kbd>g</kbd> / <kbd>G</kbd></td><td>Jump to first / last item</td></tr>
+          <tr><td><kbd>q</kbd> / <kbd>Ctrl-C</kbd></td><td>Quit</td></tr>
+          <tr><td>Mouse click</td><td>Move cursor and (on a folder) enter it</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="container">
+      <h2>Built with</h2>
+      <ul class="links">
+        <li><a href="https://github.com/charmbracelet/bubbletea">bubbletea</a> — the Elm-architecture TUI framework</li>
+        <li><a href="https://github.com/charmbracelet/lipgloss">lipgloss</a> — styled string composition</li>
+        <li><a href="https://github.com/sabhiram/go-gitignore">go-gitignore</a> — gitignore matcher</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>MIT licensed · <a href="https://github.com/marcomondini/banana-four">source</a> · <a href="https://github.com/marcomondini/banana-four/blob/main/SECURITY.md">security</a> · <a href="https://github.com/marcomondini/banana-four/blob/main/CONTRIBUTING.md">contribute</a></p>
+    </div>
+  </footer>
+</body>
+</html>
