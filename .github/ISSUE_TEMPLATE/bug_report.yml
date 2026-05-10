@@ -1,0 +1,54 @@
+name: Bug report
+description: Something isn't working the way you expect
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Please fill in as
+        much of the form below as you can — the more context, the faster
+        we can fix it.
+  - type: input
+    id: version
+    attributes:
+      label: banana-four version
+      description: Run `banana-four --version`
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: OS and terminal
+      description: e.g. macOS 14.5 / iTerm2 3.5, Ubuntu 22.04 / GNOME Terminal
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Smallest possible sequence that triggers the bug.
+      placeholder: |
+        1. cd into a repo with a .gitignore
+        2. run `banana-four`
+        3. press Enter on a folder...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Include screenshots, recordings, or copy-pasted output if helpful.
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Logs, related issues, hunches.
