@@ -60,9 +60,10 @@ type Model struct {
 	totalSize  int64
 	sizeExact  bool
 
-	// QuitWithCD is set when the user pressed the "quit and cd here" key
-	// (capital Q). The runner inspects this after tea.Quit so a wrapper
-	// shell function can capture the path off stdout.
+	// QuitWithCD is set when the user pressed the "end here" key (e).
+	// The runner inspects this after tea.Quit so a wrapper shell
+	// function can capture the path off stdout. (Was bound to capital Q
+	// pre-v0.2; the rename came with the cd-handoff rewrite.)
 	QuitWithCD bool
 
 	// scrollOffset is the index of the first grid row currently visible
@@ -368,8 +369,10 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
-	case "Q":
-		// Quit and ask the wrapper shell function to cd into the current dir.
+	case "e":
+		// End-here: quit and ask the wrapper shell function to cd into
+		// the current dir. Replaces the v0.1 capital-Q binding (which
+		// suffered from a stdout-handoff bug).
 		m.QuitWithCD = true
 		return m, tea.Quit
 	case "left", "a":
@@ -465,7 +468,7 @@ func (m *Model) adjustSetting(delta int) {
 }
 
 // handleSearchKey is the modal key handler used while searchMode is on.
-// Letter keys feed the query (so a/d/w/s/h/q/Q lose their nav meaning),
+// Letter keys feed the query (so a/d/w/s/h/q/e lose their nav meaning),
 // arrow keys still navigate matches, esc cancels, ctrl+c always quits,
 // and enter opens the highlighted match.
 func (m Model) handleSearchKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {

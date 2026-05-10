@@ -7,20 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Known issues
+### Changed
 
-- **`Q` quit-and-`cd` is broken in v0.1.** Under some shells/terminals
-  the parent shell does not follow into the chosen directory even with
-  the documented `m` wrapper. A fix is planned before v1.0. Plain `q`
-  (lowercase) quits cleanly and is unaffected.
+- **`Q` → `e` for "end here".** The capital-Q quit-and-`cd` binding
+  has been retired in favour of lowercase `e`. The v0.1 `Q` flow had
+  a stdout-handoff bug under some shells/terminals; renaming it
+  alongside the fix avoids confusion with the broken keystroke and
+  reads better next to the existing `q` quit.
+
+### Added
+
+- **Settings overlay (`.`).** First-class settings screen with three
+  knobs: colour theme (`slate` / `forest` / `ocean` / `rose`), border
+  preset (`fine` / `thick` / `dotted`), and a bionic-reading on/off
+  toggle. Defaults match the v0.1 look. Settings are session-scoped;
+  a persisted-config story is the remaining v1 piece.
 
 ### Planned for v1.0
 
-- **Settings view + customisation pattern.** First-class settings
-  screen with the conventions that future customisation surfaces
-  (theme, keymap, default flags) will follow. Until then the TUI is
-  intentionally zero-configuration.
-- Fix for the `Q` quit-and-`cd` handoff above.
+- Persisted settings (the `.` overlay survives across launches).
 - Optional Homebrew tap (`brew install mondial7/tap/mira`).
 
 ## [0.1.0] - 2026-05-10

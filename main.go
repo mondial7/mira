@@ -5,8 +5,8 @@
 // directory instead, so it composes well in scripts.
 //
 // Pass --cd-file when invoking from a wrapper shell function: the chosen
-// directory is written to that path on a "Q" quit so the wrapper can
-// `cd` into it.
+// directory is written to that path when the user presses "e" (end here)
+// so the wrapper can `cd` into it.
 package main
 
 import (
@@ -36,7 +36,7 @@ func run(args []string, stdout, stderr *os.File) int {
 	dirs := fs.Bool("d", false, "list directories only")
 	noIgnore := fs.Bool("no-ignore", false, "disable .gitignore filtering")
 	listMode := fs.Bool("list", false, "force flat-list output instead of the TUI")
-	cdFile := fs.String("cd-file", "", "write the chosen directory to PATH on Q-quit (for shell-wrapper integration)")
+	cdFile := fs.String("cd-file", "", "write the chosen directory to PATH on 'e' (end here) (for shell-wrapper integration)")
 	showVersion := fs.Bool("version", false, "print version and exit")
 
 	fs.Usage = func() {
@@ -46,7 +46,7 @@ A pretty, interactive folder visualizer.
 
 By default mira opens a TUI. Pipe the output or pass --list to get a
 plain listing instead. Pass --cd-file from a shell wrapper to capture
-the final directory on a "Q" quit.
+the final directory when the user presses "e" (end here).
 
 Options:
 `, filepath.Base(os.Args[0]))
@@ -78,7 +78,7 @@ Options:
 		return runFlat(stdout, stderr, root, opts)
 	case *cdFile != "":
 		// Wrapper-driven invocation: TUI runs as normal on the inherited
-		// stdout/stdin, and the chosen path is written to the file on Q.
+		// stdout/stdin, and the chosen path is written to the file on 'e'.
 		return runTUI(stderr, root, opts, *cdFile)
 	case !isTTY(stdout):
 		return runFlat(stdout, stderr, root, opts)

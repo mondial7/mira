@@ -442,18 +442,18 @@ func TestModel_QuitKey(t *testing.T) {
 	}
 }
 
-func TestModel_QuitWithCDKey(t *testing.T) {
+func TestModel_EndHereKey(t *testing.T) {
 	root := scaffoldDir(t)
 	m, err := New(root, listing.Options{})
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	next, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'Q'}})
+	next, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
 	if cmd == nil {
-		t.Fatal("expected tea.Quit cmd from 'Q' key")
+		t.Fatal("expected tea.Quit cmd from 'e' key")
 	}
 	if !next.(Model).QuitWithCD {
-		t.Error("'Q' must set QuitWithCD")
+		t.Error("'e' must set QuitWithCD")
 	}
 	if next.(Model).CWD() == "" {
 		t.Error("CWD() should be populated after navigation")

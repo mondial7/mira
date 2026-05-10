@@ -146,7 +146,7 @@ func (m Model) renderSearchBar() string {
 
 func (m Model) renderFooter() string {
 	st := m.activeStyles()
-	help := "↑↓←→/wasd move · ⏎ open · ⌫ up · h hidden · f find · . settings · Q cd here · q quit"
+	help := "↑↓←→/wasd move · ⏎ open · ⌫ up · h hidden · f find · . settings · e end here · q quit"
 	if m.searchMode {
 		help = "type to filter · ↑↓←→ move · ⏎ open · ⌫ erase · esc cancel"
 	}

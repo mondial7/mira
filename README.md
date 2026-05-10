@@ -25,7 +25,7 @@ file browser with ASCII-art icons, mouse clicks, keyboard navigation, and
                                                 ( o.o )   ( o.o )
                                                  > ^ <     v=-=v
 
-↑↓←→/wasd move · ⏎ open · ⌫ up · h hidden · f find · . settings · Q cd here · q quit
+↑↓←→/wasd move · ⏎ open · ⌫ up · h hidden · f find · . settings · e end here · q quit
 ```
 
 ## Features
@@ -67,7 +67,7 @@ Options:
   -d              list directories only
   --list          force flat-list output instead of the TUI
   --no-ignore     disable .gitignore filtering
-  --cd-file PATH  on Q-quit, write the chosen directory to PATH
+  --cd-file PATH  on 'e' (end here), write the chosen directory to PATH
                   (used by the shell wrapper — see below)
   --version       print version and exit
 ```
@@ -106,7 +106,7 @@ mira --list | grep .go
 | `f`                       | Find — start a fuzzy search                   |
 | `.`                       | Open the settings overlay                     |
 | `q` / `Ctrl-C`            | Quit                                          |
-| `Q`                       | Quit and `cd` into the explored directory †   |
+| `e`                       | End here — quit and `cd` into the directory † |
 | Mouse click on a folder   | Enter that folder                             |
 | Mouse click on `..`       | Go up                                         |
 
@@ -133,15 +133,15 @@ Inside the overlay, `↑`/`↓` (or `j`/`k`) moves between rows, `←`/`→`
 persisted-config story will land alongside the rest of the v1
 customisation surface.
 
-### Quit & cd: shell wrapper
+### End here & cd: shell wrapper
 
-> **Status (v0.1):** the `Q` quit-and-`cd` flow is **known to be broken**
-> in the current release — under some shells/terminals the parent shell
-> does not follow into the chosen directory even with the wrapper below.
-> Tracked for a fix before **v1.0**. Plain `q` (lowercase) quits cleanly
-> and is unaffected.
+> **Status:** the original capital-`Q` binding was renamed to `e`
+> ("end here") on the road to v1, alongside a rework of the cd handoff
+> that fixes a v0.1 bug where some shells/terminals didn't follow the
+> chosen directory. Plain `q` (lowercase) quits without changing
+> directory and is unaffected.
 
-`Q` only changes the parent shell's directory if you wrap the binary in
+`e` only changes the parent shell's directory if you wrap the binary in
 a shell function. The wrapper passes a temp file via `--cd-file` and
 reads it back after the TUI exits — this is bulletproof against any
 output that the terminal-restore step might emit.
@@ -173,17 +173,19 @@ function m
 end
 ```
 
-Now `m` opens the TUI; press `Q` to leave and have your shell follow you
-into whatever directory you ended up exploring. Plain `q` exits without
-changing the directory.
+Now `m` opens the TUI; press `e` to end the session and have your shell
+follow you into whatever directory you ended up exploring. Plain `q`
+exits without changing the directory.
 
 ## Roadmap to v1.0
 
 `v0.1` is the first public release — usable end-to-end, but a few items
 are explicitly deferred until **v1.0**:
 
-- **Fix `Q` quit-and-`cd` handoff.** See the known issue noted in the
-  shell-wrapper section above.
+- **Verify `e` end-here cd handoff in the wild.** The v0.1 `Q` binding
+  was retired in favour of `e` together with a rewrite of the cd
+  handoff (see shell-wrapper section above); the rewrite needs more
+  shell/terminal coverage before v1 ships.
 - **Persisted settings.** The `.` overlay (theme · borders · bionic)
   ships in this release, but choices reset on every launch. A
   config-file backing for the same overlay — plus the keymap and
