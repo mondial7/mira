@@ -25,7 +25,7 @@ file browser with ASCII-art icons, mouse clicks, keyboard navigation, and
                                                 ( o.o )   ( o.o )
                                                  > ^ <     v=-=v
 
-↑↓←→/wasd move · ⏎ open · ⌫ up · h hidden · f find · . settings · e end here · q quit
+↑↓←→/wasd move · ⏎ open · o launch · ⌫ up · h hidden · f find · . settings · e end here · q quit
 ```
 
 ## Features
@@ -108,6 +108,7 @@ mira --list | grep .go
 | `←` / `→` / `a` / `d`     | Move cursor left/right                        |
 | `↑` / `↓` / `w` / `s`     | Move cursor up/down                           |
 | `Enter` / `Space`         | Open selected folder                          |
+| `o`                       | Launch highlighted file/folder in the OS default app |
 | `Backspace` / `Esc`       | Go up one directory                           |
 | `Home` / `g`              | Jump to first item                            |
 | `End` / `G`               | Jump to last item                             |
@@ -193,9 +194,13 @@ exits without changing the directory.
 
 ## Security
 
-This tool is **read-only**. It lists directory contents; it does not open,
-modify, execute, or transmit any file. See [SECURITY.md](SECURITY.md) for
-the disclosure policy.
+mira does not modify or transmit any file. The only side-effect it can
+trigger is pressing `o`, which hands the highlighted path to the OS
+default opener (`open` on macOS, `xdg-open` on Linux, `rundll32
+url.dll,FileProtocolHandler` on Windows). The launched application
+runs with your user's permissions — mira itself never reads or
+executes the file's contents. See [SECURITY.md](SECURITY.md) for the
+disclosure policy.
 
 ## Contributing
 

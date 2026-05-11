@@ -414,6 +414,8 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.toggleHidden()
 	case "f":
 		m.startSearch()
+	case "o":
+		m.openHighlighted()
 	case ".":
 		m.openSettings()
 	}
@@ -671,6 +673,22 @@ func (m *Model) activate(i int) {
 	m.cursor = 0
 	if err := m.refresh(); err != nil {
 		m.cwd = prev
+		m.err = err
+	}
+}
+
+// openHighlighted hands the currently selected entry to the OS default
+// handler. The synthetic ".." entry is skipped — opening the directory
+// you're already viewing is rarely what the user wants and would clash
+// with the existing backspace/Esc binding. Errors are surfaced through
+// the status line so the user notices when the platform opener is
+// missing or fails.
+func (m *Model) openHighlighted() {
+	if m.totalItems() == 0 || m.isParent(m.cursor) {
+		return
+	}
+	e := m.entryAt(m.cursor)
+	if err := openPathFunc(e.Path); err != nil {
 		m.err = err
 	}
 }
